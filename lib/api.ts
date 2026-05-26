@@ -1,6 +1,5 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// 커스텀 에러 클래스
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
@@ -17,6 +16,16 @@ function getToken(): string | null {
   return localStorage.getItem('harang_token')
 }
 
+// 401 발생 시 토큰 제거 후 로그인 페이지로 이동
+function handleUnauthorized() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('harang_token')
+  // 이미 로그인 페이지면 무한 리다이렉트 방지
+  if (!window.location.pathname.startsWith('/login')) {
+    window.location.href = '/login'
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -30,35 +39,31 @@ async function request<T>(
 
   try {
     const res = await fetch(`${BASE}${path}`, { ...options, headers })
-    
-    // 성공 응답 (2xx)
+
     if (res.ok) {
       if (res.status === 204) return undefined as T
       return res.json()
     }
 
-    // 에러 응답 처리
+    // 401: 자동 로그아웃 처리
+    if (res.status === 401) {
+      handleUnauthorized()
+    }
+
     let errorData: any
     try {
       errorData = await res.json()
     } catch {
-      // JSON 파싱 실패 시 기본 메시지
       throw new ApiError(res.status, res.statusText)
     }
 
-    // 백엔드 에러 응답 구조에 따라 처리
     const errorMessage = errorData.error || errorData.message || errorData.detail || '요청 실패'
     const errorDetails = errorData.details || errorData.errors
 
     throw new ApiError(res.status, errorMessage, errorDetails)
-    
+
   } catch (error) {
-    // 네트워크 에러 또는 이미 ApiError인 경우
-    if (error instanceof ApiError) {
-      throw error
-    }
-    
-    // 네트워크 에러 (서버 연결 불가 등)
+    if (error instanceof ApiError) throw error
     throw new ApiError(0, '서버에 연결할 수 없습니다. 네트워크를 확인해주세요.')
   }
 }
@@ -92,7 +97,7 @@ export const authApi = {
     }),
 
   me: () => request<UserOut>("/api/auth/me"),
-};
+}
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
@@ -170,31 +175,48 @@ export const assignmentsApi = {
     }),
   getSubmissions: (assignmentId: number) =>
     request<SubmissionOut[]>(`/api/assignments/${assignmentId}/submissions`),
+  grade: (submissionId: number, score: number) =>
+    request<void>(`/api/assignments/submissions/${submissionId}/grade`, {
+      method: 'PATCH',
+      body: JSON.stringify({ score }),
+    }),
 }
 
 // ── Grades ────────────────────────────────────────────────────────────────────
 export const gradesApi = {
   mine: () => request<GradeOut[]>('/api/grades/'),
   student: (id: number) => request<GradeOut[]>(`/api/grades/student/${id}`),
+  upsert: (studentId: number, data: {
+    subject: string
+    score: number
+    prev_score?: number
+    rank?: number
+    teacher?: string
+    semester?: string
+  }) =>
+    request<GradeOut>(`/api/grades/student/${studentId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 }
 
 // ── Schedule ──────────────────────────────────────────────────────────────────
 export const scheduleApi = {
   timetable: (grade?: number, classNum?: number) => {
-    const params = new URLSearchParams();
-    if (grade) params.set("grade", String(grade));
-    if (classNum) params.set("class_num", String(classNum));
-    return request<ScheduleItem[]>(`/api/schedule/timetable?${params}`);
+    const params = new URLSearchParams()
+    if (grade) params.set("grade", String(grade))
+    if (classNum) params.set("class_num", String(classNum))
+    return request<ScheduleItem[]>(`/api/schedule/timetable?${params}`)
   },
   events: () => request<EventOut[]>("/api/schedule/events"),
   upsertTimetable: (data: {
-    grade: number;
-    class_num: number;
-    day: string;
-    period: number;
-    subject: string;
-    teacher?: string;
-    room?: string;
+    grade: number
+    class_num: number
+    day: string
+    period: number
+    subject: string
+    teacher?: string
+    room?: string
   }) =>
     request<ScheduleItem>("/api/schedule/timetable", {
       method: "POST",
@@ -202,7 +224,7 @@ export const scheduleApi = {
     }),
   deleteTimetable: (id: number) =>
     request<void>(`/api/schedule/timetable/${id}`, { method: "DELETE" }),
-};
+}
 
 // ── QnA ───────────────────────────────────────────────────────────────────────
 export const qnaApi = {
@@ -218,7 +240,7 @@ export const qnaApi = {
       body: JSON.stringify({ content }),
     }),
   like: (postId: number) =>
-    request<{ likes: number }>(`/api/qna/${postId}/like`, { method: 'POST' }),
+    request<{ likes: number; is_liked: boolean }>(`/api/qna/${postId}/like`, { method: 'POST' }),
   acceptAnswer: (answerId: number) =>
     request<void>(`/api/qna/answers/${answerId}/accept`, { method: 'PATCH' }),
 }
@@ -234,21 +256,21 @@ export const notificationsApi = {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface UserOut {
-  id: number;
-  username: string;
-  name: string;
-  role: "student" | "teacher";
-  grade?: number;
-  class_num?: number;
-  number?: number;
-  subject?: string;
-  avatar_text: string;
-  avatar_color: string;
-  bio?: string;
-  phone?: string;
-  email?: string;
-  homeroom_grade?: number;
-  homeroom_class_num?: number;
+  id: number
+  username: string
+  name: string
+  role: "student" | "teacher"
+  grade?: number
+  class_num?: number
+  number?: number
+  subject?: string
+  avatar_text: string
+  avatar_color: string
+  bio?: string
+  phone?: string
+  email?: string
+  homeroom_grade?: number
+  homeroom_class_num?: number
 }
 
 export interface RoomOut {
@@ -324,6 +346,7 @@ export interface GradeOut {
   rank?: number
   total_students: number
   semester: string
+  exam_type: string
   teacher?: string
 }
 
@@ -356,6 +379,7 @@ export interface QnAPostOut {
   created_at: string
   answer_count: number
   answers: QnAAnswerOut[]
+  is_liked: boolean
 }
 
 export interface QnAAnswerOut {

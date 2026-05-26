@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { authApi, UserOut } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errorHandler'
 
-export type UserRole = 'student' | 'teacher'
+export type UserRole = 'student' | 'teacher' | 'admin'
 
 export interface User {
   id: string

@@ -58,10 +58,12 @@ export default function QnAPage() {
     setNewTitle(''); setNewContent(''); setNewSubject('수학')
   }
 
-  const handleLike = async (id: number) => {
+  // 좋아요 토글 — is_liked 상태로 버튼 표시 변경
+  const handleLike = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
     const res = await qnaApi.like(id)
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, likes: res.likes } : p))
-    if (selected?.id === id) setSelected(prev => prev ? { ...prev, likes: res.likes } : prev)
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, likes: res.likes, is_liked: res.is_liked } : p))
+    if (selected?.id === id) setSelected(prev => prev ? { ...prev, likes: res.likes, is_liked: res.is_liked } : prev)
   }
 
   const handleAnswer = async () => {
@@ -77,6 +79,19 @@ export default function QnAPage() {
       setSubmitting(false)
     }
   }
+
+  // 답변 채택 — 질문 작성자 또는 선생님만 가능
+  const handleAccept = async (answerId: number) => {
+    if (!selected) return
+    await qnaApi.acceptAnswer(answerId)
+    setSelected(prev => prev ? {
+      ...prev,
+      answers: prev.answers.map(a => a.id === answerId ? { ...a, is_accepted: true } : a)
+    } : prev)
+  }
+
+  const canAccept = (post: QnAPostOut) =>
+    user?.role === 'teacher' || post.author_id === user?._apiId
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
@@ -164,8 +179,12 @@ export default function QnAPage() {
                         <div style={{ fontSize: 12, color: '#aab8b5' }}>{q.author_name} · {timeAgo(q.created_at)}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 14, color: '#aab8b5', fontSize: 13 }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => { e.stopPropagation(); handleLike(q.id) }}>
-                          <ThumbsUp size={13} />{q.likes}
+                        {/* 좋아요: 이미 눌렀으면 초록색으로 표시 */}
+                        <span
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, color: (q as any).is_liked ? '#22c55e' : '#aab8b5', cursor: 'pointer' }}
+                          onClick={e => handleLike(q.id, e)}
+                        >
+                          <ThumbsUp size={13} fill={(q as any).is_liked ? '#22c55e' : 'none'} />{q.likes}
                         </span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageSquare size={13} />{q.answer_count}</span>
                       </div>
@@ -191,7 +210,6 @@ export default function QnAPage() {
                 <div style={{ height: 1, background: '#e8f0ee', marginBottom: 14 }} />
                 <p style={{ fontSize: 14, color: '#3d5a56', lineHeight: 1.8, marginBottom: 20, whiteSpace: 'pre-wrap' }}>{selected.content}</p>
 
-                {/* Answers */}
                 {selected.answers.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#6b8a85', marginBottom: 10 }}>💬 답변 {selected.answers.length}개</div>
@@ -200,8 +218,21 @@ export default function QnAPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: '50%', background: a.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white' }}>{a.avatar_text}</div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b' }}>{a.author_name}</span>
-                          {a.is_accepted && <span style={{ fontSize: 10, background: '#f0fdf4', color: '#22c55e', padding: '1px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}><Check size={10} /> 채택</span>}
+                          {a.is_accepted && (
+                            <span style={{ fontSize: 10, background: '#f0fdf4', color: '#22c55e', padding: '1px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <Check size={10} /> 채택
+                            </span>
+                          )}
                           <span style={{ fontSize: 11, color: '#aab8b5', marginLeft: 'auto' }}>{timeAgo(a.created_at)}</span>
+                          {/* 채택 버튼 — 아직 채택 안 됐고 권한 있는 경우만 표시 */}
+                          {!a.is_accepted && !selected.answers.some(x => x.is_accepted) && canAccept(selected) && (
+                            <button
+                              onClick={() => handleAccept(a.id)}
+                              style={{ fontSize: 11, background: '#e8f5f3', color: '#1a7a6e', border: '1px solid #c8e6e0', borderRadius: 5, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
+                            >
+                              채택
+                            </button>
+                          )}
                         </div>
                         <p style={{ fontSize: 13, color: '#3d5a56', lineHeight: 1.7 }}>{a.content}</p>
                       </div>

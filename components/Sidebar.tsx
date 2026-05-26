@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Bell, BookOpen, ClipboardList, Calendar, BarChart2, MessageCircle, HelpCircle, School, Settings, Home, LogOut, Megaphone } from 'lucide-react'
+import { Bell, BookOpen, ClipboardList, Calendar, BarChart2, MessageCircle, HelpCircle, School, Settings, Home, LogOut, Megaphone, Shield } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChat } from '@/contexts/ChatContext'
 import { APP_NAME, SCHOOL_NAME } from '@/lib/config'
@@ -30,24 +30,27 @@ const TEACHER_NAV = [
   { href: '/school',        icon: School,        label: '학교 전체',   section: null },
 ]
 
+const ADMIN_NAV = [
+  { href: '/admin',         icon: Shield,        label: '관리자',      section: '관리' }
+  ]
+
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
   const { rooms } = useChat()
 
-  const navItems = user?.role === 'teacher' ? TEACHER_NAV : STUDENT_NAV
+  const navItems = user?.role === 'admin' ? ADMIN_NAV : user?.role === 'teacher' ? TEACHER_NAV : STUDENT_NAV
   let currentSection: string | null = null
 
   const handleLogout = () => { logout(); router.push('/login') }
   const isTeacher = user?.role === 'teacher'
+  const isAdmin = user?.role === 'admin'
 
-  // 실시간 배지: 채팅 미읽음 수
   const chatUnread = rooms.reduce((s, r) => s + r.unread, 0)
 
   return (
     <aside className="sidebar">
-      {/* 로고 */}
       <div className="sidebar-logo">
         <div className="logo-icon">{APP_NAME[0]}</div>
         <div className="logo-text">
@@ -56,7 +59,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* 유저 카드 */}
       <Link href="/settings" className="user-card" style={{ textDecoration: 'none' }}>
         <div className="user-avatar" style={{ background: user?.avatarColor || '#22c55e', fontSize: user?.avatarText && user.avatarText.length > 1 ? 11 : 14 }}>
           {user?.avatarText || '?'}
@@ -64,7 +66,9 @@ export default function Sidebar() {
         <div className="user-info">
           <h4>{user?.name || '게스트'}</h4>
           <p style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {isTeacher
+            {isAdmin
+              ? <><span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 3, padding: '0px 4px', fontSize: 9, fontWeight: 700 }}>관리자</span></>
+              : isTeacher
               ? <><span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 3, padding: '0px 4px', fontSize: 9, fontWeight: 700 }}>선생님</span> {user?.subject}</>
               : `${user?.grade}학년 ${user?.class}반 · ${user?.number}번`
             }
@@ -72,21 +76,17 @@ export default function Sidebar() {
         </div>
       </Link>
 
-      {/* 역할 배지 */}
-      <div style={{ margin: '0 12px 8px', padding: '6px 10px', borderRadius: 8, background: isTeacher ? 'rgba(99,102,241,0.25)' : 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: isTeacher ? '#818cf8' : '#22c55e' }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: isTeacher ? '#c7d2fe' : '#86efac' }}>
-          {isTeacher ? '교사 계정' : '학생 계정'}
+      <div style={{ margin: '0 12px 8px', padding: '6px 10px', borderRadius: 8, background: isAdmin ? 'rgba(99,102,241,0.3)' : isTeacher ? 'rgba(99,102,241,0.25)' : 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: isAdmin ? '#a5b4fc' : isTeacher ? '#818cf8' : '#22c55e' }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: isAdmin ? '#e0e7ff' : isTeacher ? '#c7d2fe' : '#86efac' }}>
+          {isAdmin ? '관리자 계정' : isTeacher ? '교사 계정' : '학생 계정'}
         </span>
       </div>
 
-      {/* 네비게이션 */}
       <nav className="nav-section">
         {navItems.map((item) => {
           const showLabel = item.section && item.section !== currentSection
           if (showLabel) currentSection = item.section
-
-          // 실시간 배지 계산
           const badge = item.href === '/chat' ? chatUnread : 0
 
           return (
@@ -104,7 +104,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* 하단 */}
       <div className="sidebar-bottom">
         <span className="version-text">v1.0.0</span>
         <div style={{ display: 'flex', gap: 6 }}>

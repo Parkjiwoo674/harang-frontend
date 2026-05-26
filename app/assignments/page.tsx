@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
-import { assignmentsApi, AssignmentOut } from '@/lib/api'
-import { ClipboardList, Upload, Check, Clock, AlertCircle, Plus, X } from 'lucide-react'
+import { assignmentsApi, AssignmentOut, SubmissionOut } from '@/lib/api'
+import { ClipboardList, Upload, Check, Clock, AlertCircle, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 const subjectColors: Record<string, { bg: string; color: string }> = {
   '영어':       { bg: '#eff6ff', color: '#3b82f6' },
@@ -15,8 +15,7 @@ const subjectColors: Record<string, { bg: string; color: string }> = {
 }
 
 function getDday(dueDate: string) {
-  const diff = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000)
-  return diff
+  return Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000)
 }
 
 export default function AssignmentsPage() {
@@ -26,9 +25,16 @@ export default function AssignmentsPage() {
   const [items, setItems] = useState<AssignmentOut[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'pending' | 'done'>('pending')
-  const [submitting, setSubmitting] = useState<number | null>(null)
+  // 학생: 제출 모달
+  const [submitTarget, setSubmitTarget] = useState<AssignmentOut | null>(null)
+  const [submitContent, setSubmitContent] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  // 교사: 신규 과제 모달
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ title: '', subject: '수학', due_date: '', max_score: '100', description: '' })
+  // 교사: 제출 목록 조회
+  const [viewSubs, setViewSubs] = useState<{ assignmentId: number; subs: SubmissionOut[] } | null>(null)
+  const [grading, setGrading] = useState<Record<number, string>>({})
 
   useEffect(() => {
     assignmentsApi.list().then(setItems).finally(() => setLoading(false))
@@ -38,12 +44,21 @@ export default function AssignmentsPage() {
   const done = items.filter(a => a.is_submitted)
   const list = tab === 'pending' ? pending : done
 
-  const handleSubmit = async (id: number) => {
-    await assignmentsApi.submit(id, { content: '제출 완료' })
-    setItems(prev => prev.map(a => a.id === id ? { ...a, is_submitted: true } : a))
-    setSubmitting(null)
+  // 학생 제출
+  const handleSubmit = async () => {
+    if (!submitTarget || submitting) return
+    setSubmitting(true)
+    try {
+      await assignmentsApi.submit(submitTarget.id, { content: submitContent || '제출 완료' })
+      setItems(prev => prev.map(a => a.id === submitTarget.id ? { ...a, is_submitted: true } : a))
+      setSubmitTarget(null)
+      setSubmitContent('')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
+  // 교사 과제 등록
   const handleCreate = async () => {
     if (!form.title || !form.due_date) return
     const a = await assignmentsApi.create({
@@ -55,6 +70,27 @@ export default function AssignmentsPage() {
     setItems(prev => [...prev, a])
     setShowNew(false)
     setForm({ title: '', subject: '수학', due_date: '', max_score: '100', description: '' })
+  }
+
+  // 교사 제출 목록 열기
+  const handleViewSubs = async (a: AssignmentOut) => {
+    if (viewSubs?.assignmentId === a.id) {
+      setViewSubs(null)
+      return
+    }
+    const subs = await assignmentsApi.getSubmissions(a.id)
+    setViewSubs({ assignmentId: a.id, subs })
+  }
+
+  // 교사 채점
+  const handleGrade = async (subId: number) => {
+    const score = Number(grading[subId])
+    if (isNaN(score)) return
+    await assignmentsApi.grade(subId, score)
+    setViewSubs(prev => prev ? {
+      ...prev,
+      subs: prev.subs.map(s => s.id === subId ? { ...s, score } : s)
+    } : null)
   }
 
   return (
@@ -75,7 +111,39 @@ export default function AssignmentsPage() {
           )}
         </div>
 
-        {/* New assignment modal */}
+        {/* 학생 제출 모달 */}
+        {submitTarget && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+            <div className="card" style={{ width: 520, padding: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#1a2e2b' }}>과제 제출</h3>
+                <button onClick={() => setSubmitTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5' }}><X size={20} /></button>
+              </div>
+              <div style={{ padding: '12px 14px', background: '#f6faf9', borderRadius: 10, marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#1a2e2b' }}>{submitTarget.title}</div>
+                <div style={{ fontSize: 12, color: '#6b8a85', marginTop: 4 }}>{submitTarget.subject} · {submitTarget.teacher_name} · 배점 {submitTarget.max_score}점</div>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 7 }}>제출 내용</label>
+                <textarea
+                  className="input"
+                  placeholder="과제 내용을 작성하거나 제출 메시지를 입력하세요..."
+                  value={submitContent}
+                  onChange={e => setSubmitContent(e.target.value)}
+                  style={{ minHeight: 120 }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+                <button className="btn btn-secondary" onClick={() => setSubmitTarget(null)}>취소</button>
+                <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+                  <Upload size={14} /> {submitting ? '제출 중...' : '제출하기'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 교사 과제 등록 모달 */}
         {showNew && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
             <div className="card" style={{ width: 520, padding: 28 }}>
@@ -137,39 +205,89 @@ export default function AssignmentsPage() {
                 {list.map(a => {
                   const dday = getDday(a.due_date)
                   const sc = subjectColors[a.subject]
+                  const isExpanded = viewSubs?.assignmentId === a.id
                   return (
-                    <div key={a.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px' }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, background: sc?.bg || '#f3f7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: sc?.color || '#1a7a6e' }}>
-                        {a.subject.slice(0, 2)}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: '#1a2e2b' }}>{a.title}</span>
-                          <span style={{ background: sc?.bg, color: sc?.color, fontSize: 11, padding: '2px 7px', borderRadius: 5, fontWeight: 600 }}>{a.subject}</span>
+                    <div key={a.id} className="card" style={{ padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, background: sc?.bg || '#f3f7f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: sc?.color || '#1a7a6e' }}>
+                          {a.subject.slice(0, 2)}
                         </div>
-                        <div style={{ fontSize: 12, color: '#6b8a85' }}>
-                          {a.teacher_name} · 마감 {new Date(a.due_date).toLocaleDateString('ko-KR')} · 배점 {a.max_score}점
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: '#1a2e2b' }}>{a.title}</span>
+                            <span style={{ background: sc?.bg, color: sc?.color, fontSize: 11, padding: '2px 7px', borderRadius: 5, fontWeight: 600 }}>{a.subject}</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: '#6b8a85' }}>
+                            {a.teacher_name} · 마감 {new Date(a.due_date).toLocaleDateString('ko-KR')} · 배점 {a.max_score}점
+                          </div>
                         </div>
+                        {!a.is_submitted && (
+                          <div style={{ textAlign: 'center', minWidth: 60, color: dday === 0 ? '#ef4444' : dday < 0 ? '#aab8b5' : dday <= 3 ? '#f97316' : '#6b8a85', fontWeight: 800, fontSize: 14 }}>
+                            {dday === 0 ? 'D-Day' : dday < 0 ? `D+${Math.abs(dday)}` : `D-${dday}`}
+                          </div>
+                        )}
+                        {a.is_submitted ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
+                            <Check size={16} /> 제출 완료
+                          </div>
+                        ) : !isTeacher ? (
+                          <button className="btn btn-primary" onClick={() => setSubmitTarget(a)} style={{ padding: '8px 16px', fontSize: 13, flexShrink: 0 }}>
+                            <Upload size={14} /> 제출하기
+                          </button>
+                        ) : null}
+                        {/* 교사: 제출 목록 토글 */}
+                        {isTeacher && (
+                          <button
+                            className="btn btn-secondary"
+                            onClick={() => handleViewSubs(a)}
+                            style={{ padding: '8px 14px', fontSize: 12, flexShrink: 0 }}
+                          >
+                            제출 목록 {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                          </button>
+                        )}
                       </div>
-                      {!a.is_submitted && (
-                        <div style={{ textAlign: 'center', minWidth: 60, color: dday === 0 ? '#ef4444' : dday < 0 ? '#aab8b5' : dday <= 3 ? '#f97316' : '#6b8a85', fontWeight: 800, fontSize: 14 }}>
-                          {dday === 0 ? 'D-Day' : dday < 0 ? `D+${Math.abs(dday)}` : `D-${dday}`}
+
+                      {/* 교사용 제출 목록 */}
+                      {isExpanded && viewSubs && (
+                        <div style={{ marginTop: 16, borderTop: '1px solid #e8f0ee', paddingTop: 14 }}>
+                          {viewSubs.subs.length === 0 ? (
+                            <p style={{ fontSize: 13, color: '#aab8b5', textAlign: 'center' }}>제출한 학생이 없습니다</p>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {viewSubs.subs.map(s => (
+                                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f6faf9', borderRadius: 8 }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1a2e2b' }}>학생 #{s.student_id}</div>
+                                    <div style={{ fontSize: 12, color: '#6b8a85', marginTop: 2 }}>{s.content || '(내용 없음)'}</div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {s.score != null ? (
+                                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1a7a6e' }}>{s.score}점</span>
+                                    ) : (
+                                      <>
+                                        <input
+                                          type="number"
+                                          placeholder="점수"
+                                          value={grading[s.id] ?? ''}
+                                          onChange={e => setGrading(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                          style={{ width: 72, padding: '5px 8px', border: '1.5px solid #e2e8e6', borderRadius: 6, fontSize: 13, fontFamily: 'inherit' }}
+                                          min={0} max={a.max_score}
+                                        />
+                                        <button
+                                          className="btn btn-primary"
+                                          style={{ padding: '6px 12px', fontSize: 12 }}
+                                          onClick={() => handleGrade(s.id)}
+                                          disabled={!grading[s.id]}
+                                        >채점</button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
-                      {a.is_submitted ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
-                          <Check size={16} /> 제출 완료
-                        </div>
-                      ) : !isTeacher && submitting === a.id ? (
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <button className="btn btn-secondary" onClick={() => setSubmitting(null)} style={{ padding: '8px 14px', fontSize: 12 }}><X size={13} /> 취소</button>
-                          <button className="btn btn-primary" onClick={() => handleSubmit(a.id)} style={{ padding: '8px 14px', fontSize: 12 }}><Upload size={13} /> 제출 확인</button>
-                        </div>
-                      ) : !isTeacher ? (
-                        <button className="btn btn-primary" onClick={() => setSubmitting(a.id)} style={{ padding: '8px 16px', fontSize: 13, flexShrink: 0 }}>
-                          <Upload size={14} /> 제출하기
-                        </button>
-                      ) : null}
                     </div>
                   )
                 })}
