@@ -1,10 +1,13 @@
 'use client'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { Bell, BookOpen, ClipboardList, Calendar, BarChart2, MessageCircle, HelpCircle, School, Settings, Home, LogOut, Megaphone, Shield } from 'lucide-react'
+import { Bell, BookOpen, ClipboardList, Calendar, BarChart2, MessageCircle, HelpCircle, School, Settings, Home, LogOut, Megaphone, Shield, UtensilsCrossed } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChat } from '@/contexts/ChatContext'
 import { APP_NAME, SCHOOL_NAME } from '@/lib/config'
+import Image from 'next/image'
+
+const MEDIA_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const STUDENT_NAV = [
   { href: '/dashboard',     icon: Home,          label: '대시보드',    section: null },
@@ -16,6 +19,7 @@ const STUDENT_NAV = [
   { href: '/chat',          icon: MessageCircle, label: '반 채팅',     section: '소통' },
   { href: '/qna',           icon: HelpCircle,    label: '질문 게시판', section: null },
   { href: '/school',        icon: School,        label: '학교 전체',   section: null },
+  { href: '/meal',          icon: UtensilsCrossed, label: '급식판',      section: '기타' },
 ]
 
 const TEACHER_NAV = [
@@ -28,11 +32,12 @@ const TEACHER_NAV = [
   { href: '/chat',          icon: MessageCircle, label: '반 채팅',     section: '소통' },
   { href: '/qna',           icon: HelpCircle,    label: '질문 게시판', section: null },
   { href: '/school',        icon: School,        label: '학교 전체',   section: null },
+  { href: '/meal',          icon: UtensilsCrossed, label: '급식판',      section: '기타' },
 ]
 
 const ADMIN_NAV = [
-  { href: '/admin',         icon: Shield,        label: '관리자',      section: '관리' }
-  ]
+  { href: '/admin', icon: Shield, label: '관리자', section: '관리' }
+]
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -46,13 +51,14 @@ export default function Sidebar() {
   const handleLogout = () => { logout(); router.push('/login') }
   const isTeacher = user?.role === 'teacher'
   const isAdmin = user?.role === 'admin'
-
   const chatUnread = rooms.reduce((s, r) => s + r.unread, 0)
 
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-icon">{APP_NAME[0]}</div>
+        <div className="logo-icon" style={{ padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          <Image src="/icons/logo.png" alt="하랑 로고" width={50} height={50} style={{ objectFit: 'cover', minWidth: '100%', minHeight: '100%' }} />
+        </div>
         <div className="logo-text">
           <h2>{APP_NAME}</h2>
           <p>{SCHOOL_NAME}</p>
@@ -60,9 +66,16 @@ export default function Sidebar() {
       </div>
 
       <Link href="/settings" className="user-card" style={{ textDecoration: 'none' }}>
-        <div className="user-avatar" style={{ background: user?.avatarColor || '#22c55e', fontSize: user?.avatarText && user.avatarText.length > 1 ? 11 : 14 }}>
-          {user?.avatarText || '?'}
-        </div>
+        {user?.profileImage
+          ? <img
+              src={`${MEDIA_BASE}${user.profileImage}`}
+              alt="프로필"
+              style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}
+            />
+          : <div className="user-avatar" style={{ background: user?.avatarColor || '#22c55e', fontSize: user?.avatarText && user.avatarText.length > 1 ? 11 : 14 }}>
+              {user?.avatarText || '?'}
+            </div>
+        }
         <div className="user-info">
           <h4>{user?.name || '게스트'}</h4>
           <p style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -88,14 +101,11 @@ export default function Sidebar() {
           const showLabel = item.section && item.section !== currentSection
           if (showLabel) currentSection = item.section
           const badge = item.href === '/chat' ? chatUnread : 0
-
           return (
             <div key={item.href}>
               {showLabel && <div className="nav-label">{item.section}</div>}
               <Link href={item.href} className={`nav-item ${pathname === item.href ? 'active' : ''}`}>
-                <div className="nav-icon">
-                  <item.icon size={16} />
-                </div>
+                <div className="nav-icon"><item.icon size={16} /></div>
                 {item.label}
                 {badge > 0 && <span className="badge">{badge}</span>}
               </Link>
@@ -107,12 +117,8 @@ export default function Sidebar() {
       <div className="sidebar-bottom">
         <span className="version-text">v1.0.0</span>
         <div style={{ display: 'flex', gap: 6 }}>
-          <Link href="/settings" className="icon-btn" title="설정">
-            <Settings size={14} />
-          </Link>
-          <button onClick={handleLogout} className="icon-btn" title="로그아웃" style={{ border: 'none', cursor: 'pointer' }}>
-            <LogOut size={14} />
-          </button>
+          <Link href="/settings" className="icon-btn" title="설정"><Settings size={14} /></Link>
+          <button onClick={handleLogout} className="icon-btn" title="로그아웃" style={{ border: 'none', cursor: 'pointer' }}><LogOut size={14} /></button>
         </div>
       </div>
     </aside>

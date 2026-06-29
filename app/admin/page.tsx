@@ -173,7 +173,7 @@ export default function AdminPage() {
         </div>
 
         {/* 탭 */}
-        <div style={{ display: 'flex', gap: 4, background: 'white', padding: 4, borderRadius: 10, marginBottom: 20, width: 'fit-content', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg-card)', padding: 4, borderRadius: 10, marginBottom: 20, width: 'fit-content', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           {[
             { key: 'codes', label: '교사 인증 코드', icon: <Key size={14} /> },
             { key: 'users', label: '유저 관리', icon: <Users size={14} /> },
@@ -198,16 +198,16 @@ export default function AdminPage() {
                   <span className="card-title">🔑 미사용 코드 ({unusedCodes.length}개)</span>
                 </div>
                 {codesLoading ? (
-                  <div style={{ padding: '20px 0', textAlign: 'center', color: '#aab8b5' }}>불러오는 중...</div>
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)' }}>불러오는 중...</div>
                 ) : unusedCodes.length === 0 ? (
-                  <div style={{ padding: '20px 0', textAlign: 'center', color: '#aab8b5' }}>미사용 코드가 없습니다. 새로 생성해주세요.</div>
+                  <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)' }}>미사용 코드가 없습니다. 새로 생성해주세요.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {unusedCodes.map(c => (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f6faf9', borderRadius: 8, border: '1px solid #e8f0ee' }}>
-                        <code style={{ flex: 1, fontSize: 16, fontWeight: 800, letterSpacing: 3, color: '#1a2e2b', fontFamily: 'monospace' }}>{c.code}</code>
-                        <span style={{ fontSize: 11, color: '#aab8b5' }}>{new Date(c.created_at).toLocaleDateString('ko-KR')}</span>
-                        <button onClick={() => handleCopy(c.id, c.code)} style={{ width: 30, height: 30, border: '1px solid #e2e8e6', borderRadius: 6, background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copiedId === c.id ? '#22c55e' : '#6b8a85' }}>
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border-card)' }}>
+                        <code style={{ flex: 1, fontSize: 16, fontWeight: 800, letterSpacing: 3, color: 'var(--text-primary)', fontFamily: 'monospace' }}>{c.code}</code>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleDateString('ko-KR')}</span>
+                        <button onClick={() => handleCopy(c.id, c.code)} style={{ width: 30, height: 30, border: '1px solid #e2e8e6', borderRadius: 6, background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: copiedId === c.id ? '#22c55e' : '#6b8a85' }}>
                           {copiedId === c.id ? <Check size={13} /> : <Copy size={13} />}
                         </button>
                         <button onClick={() => handleDeleteCode(c.id)} style={{ width: 30, height: 30, border: '1px solid #fecaca', borderRadius: 6, background: '#fef2f2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
@@ -223,13 +223,13 @@ export default function AdminPage() {
               {usedCodes.length > 0 && (
                 <div className="card">
                   <div className="card-header">
-                    <span className="card-title" style={{ color: '#aab8b5' }}>✓ 사용된 코드 ({usedCodes.length}개)</span>
+                    <span className="card-title" style={{ color: 'var(--text-muted)' }}>✓ 사용된 코드 ({usedCodes.length}개)</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {usedCodes.map(c => (
                       <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: '#f8fbfa', borderRadius: 8, opacity: 0.7 }}>
-                        <code style={{ flex: 1, fontSize: 14, letterSpacing: 2, color: '#aab8b5', fontFamily: 'monospace', textDecoration: 'line-through' }}>{c.code}</code>
-                        <span style={{ fontSize: 12, color: '#6b8a85' }}>{c.used_by?.name} ({c.used_by?.username})</span>
+                        <code style={{ flex: 1, fontSize: 14, letterSpacing: 2, color: 'var(--text-muted)', fontFamily: 'monospace', textDecoration: 'line-through' }}>{c.code}</code>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.used_by?.name} ({c.used_by?.username})</span>
                       </div>
                     ))}
                   </div>
@@ -241,7 +241,7 @@ export default function AdminPage() {
             <div className="card" style={{ alignSelf: 'start' }}>
               <div className="card-header"><span className="card-title">새 코드 생성</span></div>
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 7 }}>생성 개수</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 7 }}>생성 개수</label>
                 <input
                   type="text"
                   value={genCount}
@@ -249,7 +249,7 @@ export default function AdminPage() {
                   className="input"
                   placeholder="숫자 입력"
                 />
-                <p style={{ fontSize: 11, color: '#aab8b5', marginTop: 4 }}>최대 50개까지 한 번에 생성 가능</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>최대 50개까지 한 번에 생성 가능</p>
               </div>
               <button
                 className="btn btn-primary"
@@ -260,8 +260,8 @@ export default function AdminPage() {
                 <Plus size={15} /> {generating ? '생성 중...' : `코드 ${genCount || 0}개 생성`}
               </button>
 
-              <div style={{ marginTop: 20, padding: '14px', background: '#f6faf9', borderRadius: 10, fontSize: 12, color: '#6b8a85', lineHeight: 1.7 }}>
-                <strong style={{ color: '#1a2e2b' }}>코드 발급 방법</strong><br />
+              <div style={{ marginTop: 20, padding: '14px', background: 'var(--bg)', borderRadius: 10, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>코드 발급 방법</strong><br />
                 1. 코드 생성 후 복사 버튼 클릭<br />
                 2. 교사에게 코드 전달<br />
                 3. 교사가 회원가입 시 입력<br />
@@ -291,7 +291,7 @@ export default function AdminPage() {
 
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {usersLoading ? (
-                <div style={{ padding: '40px 0', textAlign: 'center', color: '#aab8b5' }}>불러오는 중...</div>
+                <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>불러오는 중...</div>
               ) : (
                 <table className="table">
                   <thead>
@@ -310,7 +310,7 @@ export default function AdminPage() {
                     {filteredUsers.map(u => (
                       <tr key={u.id}>
                         <td style={{ fontWeight: 700 }}>{u.name}</td>
-                        <td style={{ color: '#6b8a85' }}>{u.username}</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{u.username}</td>
                         <td>
                           <span style={{
                             padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
@@ -320,10 +320,10 @@ export default function AdminPage() {
                             {u.role === 'teacher' ? '교사' : u.role === 'admin' ? '관리자' : '학생'}
                           </span>
                         </td>
-                        <td style={{ fontSize: 12, color: '#6b8a85' }}>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                           {u.role === 'student' ? `${u.grade}학년 ${u.class_num}반 ${u.number}번` : u.subject || '-'}
                         </td>
-                        <td style={{ fontSize: 12, color: '#6b8a85' }}>{u.email}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</td>
                         <td>
                           <span style={{
                             padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700,
@@ -333,7 +333,7 @@ export default function AdminPage() {
                             {u.is_active ? '활성' : '비활성'}
                           </span>
                         </td>
-                        <td style={{ fontSize: 12, color: '#aab8b5' }}>{new Date(u.created_at).toLocaleDateString('ko-KR')}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(u.created_at).toLocaleDateString('ko-KR')}</td>
                         <td>
                           {u.role !== 'admin' && (
                             <div style={{ display: 'flex', gap: 6 }}>

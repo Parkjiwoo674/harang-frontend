@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
-import { scheduleApi, ScheduleItem, EventOut } from '@/lib/api'
+import { scheduleApi, ScheduleItem, EventOut, PersonalEventOut } from '@/lib/api'
 import { getErrorMessage } from '@/lib/errorHandler'
 import { Calendar, Clock, MapPin, Plus, X, Trash2, Pencil, Lock } from 'lucide-react'
 
@@ -12,12 +12,23 @@ const TIMES = [
   '13:40–14:30', '14:40–15:30', '15:40–16:30',
 ]
 
-const SUBJECT_COLORS: Record<string, string> = {
-  '국어': '#fef2f2', '수학': '#f5f3ff', '영어': '#eff6ff',
-  '과학': '#fff7ed', '사회': '#fdf4ff', '체육': '#f0fdfa',
-  '음악': '#fff1f2', '미술': '#f0fdf4', '프로그래밍': '#f0fdf4',
-  '물리': '#fff7ed', '화학': '#ecfeff', '생물': '#f0fdf4',
-  '한국사': '#fef2f2', '역사': '#fef2f2', '도덕': '#fdf4ff',
+// 과목별 색상 (라이트/다크 공통으로 opacity 낮은 색 사용)
+const SUBJECT_COLORS: Record<string, { bg: string; text: string }> = {
+  '국어':    { bg: 'rgba(239,68,68,0.12)',   text: '#ef4444' },
+  '수학':    { bg: 'rgba(139,92,246,0.12)',   text: '#8b5cf6' },
+  '영어':    { bg: 'rgba(59,130,246,0.12)',   text: '#3b82f6' },
+  '과학':    { bg: 'rgba(249,115,22,0.12)',   text: '#f97316' },
+  '사회':    { bg: 'rgba(217,70,239,0.12)',   text: '#d946ef' },
+  '체육':    { bg: 'rgba(20,184,166,0.12)',   text: '#14b8a6' },
+  '음악':    { bg: 'rgba(244,63,94,0.12)',    text: '#f43f5e' },
+  '미술':    { bg: 'rgba(34,197,94,0.12)',    text: '#22c55e' },
+  '프로그래밍': { bg: 'rgba(26,122,110,0.15)', text: '#1a7a6e' },
+  '물리':    { bg: 'rgba(249,115,22,0.12)',   text: '#f97316' },
+  '화학':    { bg: 'rgba(6,182,212,0.12)',    text: '#06b6d4' },
+  '생물':    { bg: 'rgba(34,197,94,0.12)',    text: '#22c55e' },
+  '한국사':  { bg: 'rgba(239,68,68,0.12)',    text: '#ef4444' },
+  '역사':    { bg: 'rgba(239,68,68,0.12)',    text: '#ef4444' },
+  '도덕':    { bg: 'rgba(217,70,239,0.12)',   text: '#d946ef' },
 }
 
 type Cell = ScheduleItem | undefined
@@ -26,18 +37,36 @@ export default function SchedulePage() {
   const { user } = useAuth()
   const [items, setItems] = useState<ScheduleItem[]>([])
   const [events, setEvents] = useState<EventOut[]>([])
+  const [personalEvents, setPersonalEvents] = useState<PersonalEventOut[]>([])
   const [loading, setLoading] = useState(true)
 
   // 보고 있는 학급 (담임 교사면 본인 담임반이 기본)
   const [viewGrade, setViewGrade] = useState<number | undefined>()
   const [viewClass, setViewClass] = useState<number | undefined>()
 
-  // 편집 모달
+  // 편집 모달 (시간표)
   const [editing, setEditing] = useState<{ day: string; period: number; existing?: ScheduleItem } | null>(null)
   const [formSubject, setFormSubject] = useState('')
   const [formTeacher, setFormTeacher] = useState('')
   const [formRoom, setFormRoom] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // 학사 일정 추가 모달
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [eventTitle, setEventTitle] = useState('')
+  const [eventType, setEventType] = useState('행사')
+  const [eventDate, setEventDate] = useState('')
+  const [eventDesc, setEventDesc] = useState('')
+  const [eventSaving, setEventSaving] = useState(false)
+
+  // 개인 일정 추가 모달 (학생/교사 누구나)
+  const PERSONAL_COLORS = ['#1a7a6e', '#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#d946ef']
+  const [showPersonalModal, setShowPersonalModal] = useState(false)
+  const [personalTitle, setPersonalTitle] = useState('')
+  const [personalDate, setPersonalDate] = useState('')
+  const [personalDesc, setPersonalDesc] = useState('')
+  const [personalColor, setPersonalColor] = useState(PERSONAL_COLORS[0])
+  const [personalSaving, setPersonalSaving] = useState(false)
 
   // 사용자 역할에 따라 viewGrade/viewClass 초기값 결정
   useEffect(() => {
@@ -55,12 +84,14 @@ export default function SchedulePage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [tt, ev] = await Promise.all([
+      const [tt, ev, pv] = await Promise.all([
         scheduleApi.timetable(viewGrade, viewClass).catch(() => []),
         scheduleApi.events().catch(() => []),
+        scheduleApi.personalEvents().catch(() => []),
       ])
       setItems(tt as ScheduleItem[])
       setEvents(ev as EventOut[])
+      setPersonalEvents(pv as PersonalEventOut[])
     } finally {
       setLoading(false)
     }
@@ -82,6 +113,7 @@ export default function SchedulePage() {
   const todayDay = todayIdx >= 1 && todayIdx <= 5 ? DAYS[todayIdx - 1] : null
 
   // 편집 권한: 교사 + 본인 담임 학급과 보고 있는 학급이 일치
+  const isTeacher = user?.role === 'teacher'
   const canEdit = !!(
     user?.role === 'teacher' &&
     user.homeroomGrade != null &&
@@ -141,6 +173,76 @@ export default function SchedulePage() {
     }
   }
 
+  // 학사 일정 추가
+  const closeEventModal = () => {
+    setShowEventModal(false)
+    setEventTitle(''); setEventType('행사'); setEventDate(''); setEventDesc('')
+  }
+
+  const handleCreateEvent = async () => {
+    if (!eventTitle.trim() || !eventDate) return
+    setEventSaving(true)
+    try {
+      await scheduleApi.createEvent({
+        title: eventTitle.trim(),
+        event_type: eventType,
+        event_date: eventDate,
+        description: eventDesc.trim() || undefined,
+      })
+      await load()
+      closeEventModal()
+    } catch (e: any) {
+      alert(getErrorMessage(e))
+    } finally {
+      setEventSaving(false)
+    }
+  }
+
+  const handleDeleteEvent = async (id: number) => {
+    if (!confirm('이 일정을 삭제할까요?')) return
+    try {
+      await scheduleApi.deleteEvent(id)
+      await load()
+    } catch (e: any) {
+      alert(getErrorMessage(e))
+    }
+  }
+
+  // 개인 일정 추가/삭제
+  const closePersonalModal = () => {
+    setShowPersonalModal(false)
+    setPersonalTitle(''); setPersonalDate(''); setPersonalDesc(''); setPersonalColor(PERSONAL_COLORS[0])
+  }
+
+  const handleCreatePersonal = async () => {
+    if (!personalTitle.trim() || !personalDate) return
+    setPersonalSaving(true)
+    try {
+      await scheduleApi.createPersonalEvent({
+        title: personalTitle.trim(),
+        event_date: personalDate,
+        description: personalDesc.trim() || undefined,
+        color: personalColor,
+      })
+      await load()
+      closePersonalModal()
+    } catch (e: any) {
+      alert(getErrorMessage(e))
+    } finally {
+      setPersonalSaving(false)
+    }
+  }
+
+  const handleDeletePersonal = async (id: number) => {
+    if (!confirm('이 일정을 삭제할까요?')) return
+    try {
+      await scheduleApi.deletePersonalEvent(id)
+      await load()
+    } catch (e: any) {
+      alert(getErrorMessage(e))
+    }
+  }
+
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <Sidebar />
@@ -197,10 +299,10 @@ export default function SchedulePage() {
                 border: '1px solid #e8f0ee', borderRadius: 10, overflow: 'hidden',
               }}>
                 {/* 헤더 */}
-                <div style={{ background: '#f6faf9', padding: '10px 0', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#6b8a85', borderBottom: '1px solid #e8f0ee' }}>교시</div>
+                <div style={{ background: 'var(--bg)', padding: '10px 0', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-card)' }}>교시</div>
                 {DAYS.map(d => (
                   <div key={d} style={{
-                    background: d === todayDay ? '#e8f5f3' : '#f6faf9',
+                    background: d === todayDay ? 'rgba(26,122,110,0.15)' : 'var(--bg)',
                     padding: '10px 0', textAlign: 'center', fontSize: 13, fontWeight: 800,
                     color: d === todayDay ? '#1a7a6e' : '#3d5a56',
                     borderLeft: '1px solid #e8f0ee', borderBottom: '1px solid #e8f0ee',
@@ -212,7 +314,7 @@ export default function SchedulePage() {
                 {/* 셀 */}
                 {TIMES.map((time, i) => (
                   <React.Fragment key={`row-${i}`}>
-                    <div style={{ padding: '0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #e8f0ee', background: '#fafcfc' }}>
+                    <div style={{ padding: '0 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--border-card)', background: 'var(--bg)' }}>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#1a7a6e' }}>{i + 1}</div>
                       <div style={{ fontSize: 10, color: '#aab8b5', marginTop: 2, whiteSpace: 'nowrap' }}>{time.split('–')[0]}</div>
                     </div>
@@ -225,7 +327,7 @@ export default function SchedulePage() {
                           style={{
                             padding: '10px',
                             borderLeft: '1px solid #e8f0ee', borderBottom: '1px solid #e8f0ee',
-                            background: cls ? (SUBJECT_COLORS[cls.subject] || 'white') : 'white',
+                            background: cls ? (SUBJECT_COLORS[cls.subject]?.bg || 'var(--bg-card)') : 'var(--bg-card)',
                             minHeight: 70,
                             outline: d === todayDay ? '2px solid rgba(26,122,110,0.15)' : 'none',
                             outlineOffset: -1,
@@ -238,7 +340,7 @@ export default function SchedulePage() {
                         >
                           {cls ? (
                             <>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: '#1a2e2b' }}>{cls.subject}</div>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{cls.subject}</div>
                               {cls.teacher && <div style={{ fontSize: 11, color: '#6b8a85', marginTop: 2 }}>{cls.teacher}</div>}
                               {cls.room && <div style={{ fontSize: 10, color: '#aab8b5', marginTop: 2 }}>{cls.room}</div>}
                             </>
@@ -256,35 +358,198 @@ export default function SchedulePage() {
             )}
 
             {!canEdit && user?.role === 'teacher' && (
-              <div style={{ marginTop: 14, padding: '12px 14px', background: '#fafcfc', border: '1px solid #e8f0ee', borderRadius: 10, fontSize: 12, color: '#6b8a85', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ marginTop: 14, padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--border-card)', borderRadius: 10, fontSize: 12, color: '#6b8a85', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Lock size={14} /> 본인 담임 학급의 시간표만 수정할 수 있습니다
               </div>
             )}
           </div>
 
-          {/* 학사 일정 */}
-          <div className="card">
-            <div className="card-header"><span className="card-title">📅 학사 일정</span></div>
-            {events.length === 0 ? (
-              <div style={{ padding: '20px 0', textAlign: 'center', color: '#aab8b5', fontSize: 13 }}>예정된 일정이 없습니다</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {events.slice(0, 12).map(e => (
-                  <div key={e.id} style={{ display: 'flex', gap: 12, padding: '10px 12px', borderRadius: 9, background: '#f6faf9', border: '1px solid #e8f0ee' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 44, padding: '4px 0', background: 'white', borderRadius: 7, border: '1px solid #e8f0ee' }}>
-                      <div style={{ fontSize: 9, color: '#aab8b5', fontWeight: 700 }}>{new Date(e.event_date).toLocaleDateString('ko-KR', { month: 'short' })}</div>
-                      <div style={{ fontSize: 16, fontWeight: 900, color: '#1a7a6e' }}>{new Date(e.event_date).getDate()}</div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b', marginBottom: 2 }}>{e.title}</div>
-                      <div style={{ fontSize: 11, color: '#6b8a85' }}>{e.event_type}</div>
-                    </div>
-                  </div>
-                ))}
+          {/* 학사 일정 + 내 일정 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="card">
+              <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="card-title">📅 학사 일정</span>
+                {isTeacher && (
+                  <button
+                    onClick={() => setShowEventModal(true)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a7a6e', display: 'flex', alignItems: 'center' }}
+                    title="일정 추가"
+                  >
+                    <Plus size={18} />
+                  </button>
+                )}
               </div>
-            )}
+              {events.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: '#aab8b5', fontSize: 13 }}>예정된 일정이 없습니다</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {events.slice(0, 12).map(e => (
+                    <div key={e.id} style={{ display: 'flex', gap: 12, padding: '10px 12px', borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border-card)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 44, padding: '4px 0', background: 'var(--bg-card)', borderRadius: 7, border: '1px solid var(--border-card)', flexShrink: 0 }}>
+                        <div style={{ fontSize: 9, color: '#aab8b5', fontWeight: 700 }}>{new Date(e.event_date).toLocaleDateString('ko-KR', { month: 'short' })}</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#1a7a6e' }}>{new Date(e.event_date).getDate()}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b', marginBottom: 2 }}>{e.title}</div>
+                        <div style={{ fontSize: 11, color: '#6b8a85' }}>{e.event_type}</div>
+                      </div>
+                      {isTeacher && (
+                        <button
+                          onClick={() => handleDeleteEvent(e.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5', alignSelf: 'center' }}
+                          title="삭제"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 내 일정 (학생/교사 누구나 본인 것만 보임) */}
+            <div className="card">
+              <div className="card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="card-title">🗒️ 내 일정</span>
+                <button
+                  onClick={() => setShowPersonalModal(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a7a6e', display: 'flex', alignItems: 'center' }}
+                  title="일정 추가"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+              {personalEvents.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: '#aab8b5', fontSize: 13 }}>등록한 일정이 없습니다</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {personalEvents.slice(0, 12).map(e => (
+                    <div key={e.id} style={{ display: 'flex', gap: 12, padding: '10px 12px', borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border-card)' }}>
+                      <div style={{ width: 4, borderRadius: 2, background: e.color || '#1a7a6e', flexShrink: 0 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 40, flexShrink: 0 }}>
+                        <div style={{ fontSize: 9, color: '#aab8b5', fontWeight: 700 }}>{new Date(e.event_date).toLocaleDateString('ko-KR', { month: 'short' })}</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: e.color || '#1a7a6e' }}>{new Date(e.event_date).getDate()}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b', marginBottom: 2 }}>{e.title}</div>
+                        {e.description && <div style={{ fontSize: 11, color: '#6b8a85' }}>{e.description}</div>}
+                      </div>
+                      <button
+                        onClick={() => handleDeletePersonal(e.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5', alignSelf: 'center' }}
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* 내 일정 추가 모달 */}
+        {showPersonalModal && (
+          <div onClick={closePersonalModal} style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200
+          }}>
+            <div onClick={e => e.stopPropagation()} className="card" style={{ width: 440, padding: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>내 일정 추가</h3>
+                <button onClick={closePersonalModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>제목 *</label>
+                  <input className="input" placeholder="예: 학원 숙제 마감" value={personalTitle} onChange={e => setPersonalTitle(e.target.value)} autoFocus />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>날짜 *</label>
+                  <input className="input" type="date" value={personalDate} onChange={e => setPersonalDate(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>메모 (선택)</label>
+                  <textarea className="input" placeholder="간단한 메모" value={personalDesc} onChange={e => setPersonalDesc(e.target.value)} style={{ minHeight: 70 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>색상</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {PERSONAL_COLORS.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setPersonalColor(c)}
+                        style={{
+                          width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer',
+                          border: personalColor === c ? '2.5px solid var(--text-primary)' : '2.5px solid transparent',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 22, justifyContent: 'flex-end' }}>
+                <button onClick={closePersonalModal} className="btn btn-secondary">취소</button>
+                <button
+                  onClick={handleCreatePersonal}
+                  disabled={personalSaving || !personalTitle.trim() || !personalDate}
+                  className="btn btn-primary"
+                >
+                  {personalSaving ? '추가 중...' : '추가'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showEventModal && (
+          <div onClick={closeEventModal} style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200
+          }}>
+            <div onClick={e => e.stopPropagation()} className="card" style={{ width: 440, padding: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>학사 일정 추가</h3>
+                <button onClick={closeEventModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>제목 *</label>
+                  <input className="input" placeholder="예: 중간고사" value={eventTitle} onChange={e => setEventTitle(e.target.value)} autoFocus />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>구분</label>
+                  <select className="input" value={eventType} onChange={e => setEventType(e.target.value)} style={{ cursor: 'pointer' }}>
+                    {['시험', '행사', '휴업일', '체험학습', '방학', '기타'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>날짜 *</label>
+                  <input className="input" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+                  <textarea className="input" placeholder="일정 설명" value={eventDesc} onChange={e => setEventDesc(e.target.value)} style={{ minHeight: 70 }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 22, justifyContent: 'flex-end' }}>
+                <button onClick={closeEventModal} className="btn btn-secondary">취소</button>
+                <button
+                  onClick={handleCreateEvent}
+                  disabled={eventSaving || !eventTitle.trim() || !eventDate}
+                  className="btn btn-primary"
+                >
+                  {eventSaving ? '추가 중...' : '추가'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 편집 모달 */}
         {editing && (
@@ -296,7 +561,7 @@ export default function SchedulePage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div>
                   <div style={{ fontSize: 12, color: '#6b8a85' }}>{viewGrade}학년 {viewClass}반</div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1a2e2b' }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
                     {editing.day}요일 {editing.period}교시
                   </h3>
                 </div>

@@ -113,22 +113,22 @@ export default function QnAPage() {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
             <div className="card" style={{ width: 560, padding: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1a2e2b' }}>새 질문 작성</h3>
-                <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5' }}><X size={20} /></button>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>새 질문 작성</h3>
+                <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>과목</label>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>과목</label>
                   <select className="input" value={newSubject} onChange={e => setNewSubject(e.target.value)} style={{ cursor: 'pointer' }}>
                     {subjects.filter(s => s !== '전체').map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>제목</label>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>제목</label>
                   <input className="input" placeholder="질문 제목을 입력하세요" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 6 }}>내용</label>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>내용</label>
                   <textarea className="input" placeholder="질문 내용을 자세히 작성해주세요" value={newContent} onChange={e => setNewContent(e.target.value)} style={{ minHeight: 120 }} />
                 </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -158,7 +158,7 @@ export default function QnAPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#aab8b5' }}>불러오는 중...</div>
+          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>불러오는 중...</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 480px' : '1fr', gap: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -175,10 +175,10 @@ export default function QnAPage() {
                           <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, background: sc?.bg, color: sc?.color }}>{q.subject}</span>
                           {q.is_answered && <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 11, fontWeight: 700, background: '#f0fdf4', color: '#22c55e' }}>✓ 답변 완료</span>}
                         </div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#1a2e2b', marginBottom: 6 }}>{q.title}</div>
-                        <div style={{ fontSize: 12, color: '#aab8b5' }}>{q.author_name} · {timeAgo(q.created_at)}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>{q.title}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{q.author_name} · {timeAgo(q.created_at)}</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 14, color: '#aab8b5', fontSize: 13 }}>
+                      <div style={{ display: 'flex', gap: 14, color: 'var(--text-muted)', fontSize: 13 }}>
                         {/* 좋아요: 이미 눌렀으면 초록색으로 표시 */}
                         <span
                           style={{ display: 'flex', alignItems: 'center', gap: 4, color: (q as any).is_liked ? '#22c55e' : '#aab8b5', cursor: 'pointer' }}
@@ -193,37 +193,37 @@ export default function QnAPage() {
                 )
               })}
               {filtered.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#aab8b5' }}>질문이 없습니다</div>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>질문이 없습니다</div>
               )}
             </div>
 
             {selected && (
               <div className="card fade-in" style={{ alignSelf: 'start' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                  <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5', fontSize: 18 }}>×</button>
+                  <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 18 }}>×</button>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                   <span style={{ padding: '3px 9px', borderRadius: 5, fontSize: 12, fontWeight: 700, background: subjectColors[selected.subject]?.bg, color: subjectColors[selected.subject]?.color }}>{selected.subject}</span>
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#1a2e2b', marginBottom: 8 }}>{selected.title}</h3>
-                <div style={{ fontSize: 12, color: '#aab8b5', marginBottom: 16 }}>{selected.author_name} · {timeAgo(selected.created_at)}</div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>{selected.title}</h3>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{selected.author_name} · {timeAgo(selected.created_at)}</div>
                 <div style={{ height: 1, background: '#e8f0ee', marginBottom: 14 }} />
-                <p style={{ fontSize: 14, color: '#3d5a56', lineHeight: 1.8, marginBottom: 20, whiteSpace: 'pre-wrap' }}>{selected.content}</p>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 20, whiteSpace: 'pre-wrap' }}>{selected.content}</p>
 
                 {selected.answers.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#6b8a85', marginBottom: 10 }}>💬 답변 {selected.answers.length}개</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 10 }}>💬 답변 {selected.answers.length}개</div>
                     {selected.answers.map(a => (
-                      <div key={a.id} style={{ background: '#f6faf9', borderRadius: 10, padding: 14, marginBottom: 8, border: a.is_accepted ? '1.5px solid #22c55e' : '1px solid #e8f0ee' }}>
+                      <div key={a.id} style={{ background: 'var(--bg)', borderRadius: 10, padding: 14, marginBottom: 8, border: a.is_accepted ? '1.5px solid #22c55e' : '1px solid #e8f0ee' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                           <div style={{ width: 28, height: 28, borderRadius: '50%', background: a.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white' }}>{a.avatar_text}</div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b' }}>{a.author_name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{a.author_name}</span>
                           {a.is_accepted && (
                             <span style={{ fontSize: 10, background: '#f0fdf4', color: '#22c55e', padding: '1px 6px', borderRadius: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
                               <Check size={10} /> 채택
                             </span>
                           )}
-                          <span style={{ fontSize: 11, color: '#aab8b5', marginLeft: 'auto' }}>{timeAgo(a.created_at)}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>{timeAgo(a.created_at)}</span>
                           {/* 채택 버튼 — 아직 채택 안 됐고 권한 있는 경우만 표시 */}
                           {!a.is_accepted && !selected.answers.some(x => x.is_accepted) && canAccept(selected) && (
                             <button
@@ -234,15 +234,15 @@ export default function QnAPage() {
                             </button>
                           )}
                         </div>
-                        <p style={{ fontSize: 13, color: '#3d5a56', lineHeight: 1.7 }}>{a.content}</p>
+                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>{a.content}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
                 {selected.answers.length === 0 && (
-                  <div style={{ background: '#f6faf9', borderRadius: 10, padding: 14, marginBottom: 14 }}>
-                    <p style={{ fontSize: 13, color: '#aab8b5' }}>아직 답변이 없어요. 첫 번째로 답변해보세요!</p>
+                  <div style={{ background: 'var(--bg)', borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>아직 답변이 없어요. 첫 번째로 답변해보세요!</p>
                   </div>
                 )}
 

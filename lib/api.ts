@@ -31,8 +31,10 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = getToken()
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    // FormData일 때는 Content-Type을 직접 설정하지 않는다 (브라우저가 boundary 포함해서 자동 설정)
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
@@ -45,7 +47,6 @@ async function request<T>(
       return res.json()
     }
 
-    // 401: 자동 로그아웃 처리
     if (res.status === 401) {
       handleUnauthorized()
     }
@@ -101,10 +102,23 @@ export const authApi = {
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const usersApi = {
-  list: () => request<UserOut[]>('/api/users/'),
-  get: (id: number) => request<UserOut>(`/api/users/${id}`),
-  updateMe: (data: { phone?: string; email?: string; bio?: string }) =>
-    request<UserOut>('/api/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  list: () => request('/api/users'),
+  get: (id: number) => request(`/api/users/${id}`),
+  updateMe: (data: { name?: string; phone?: string; email?: string; bio?: string; avatar_text?: string; avatar_color?: string }) =>
+    request('/api/users/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    request('/api/users/me/password', { method: 'PATCH', body: JSON.stringify(data) }),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData()
+    formData.append('avatar', file)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('harang_token') : null
+    return fetch(`${BASE}/api/users/me/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    }).then(r => r.json())
+  },
+  deleteAvatar: () => request('/api/users/me/avatar', { method: 'DELETE' }),
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
@@ -160,19 +174,24 @@ export const assignmentsApi = {
   create: (data: {
     title: string
     description?: string
-    subject: string
     due_date: string
     max_score?: number
-  }) =>
-    request<AssignmentOut>('/api/assignments/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  submit: (assignmentId: number, data: { content?: string; file_name?: string }) =>
-    request<SubmissionOut>(`/api/assignments/${assignmentId}/submit`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    file?: File | null
+  }) => {
+    const formData = new FormData()
+    formData.append('title', data.title)
+    if (data.description) formData.append('description', data.description)
+    formData.append('due_date', data.due_date)
+    formData.append('max_score', String(data.max_score ?? 100))
+    if (data.file) formData.append('file', data.file)
+    return request<AssignmentOut>('/api/assignments/', { method: 'POST', body: formData })
+  },
+  submit: (assignmentId: number, data: { content?: string; file?: File | null }) => {
+    const formData = new FormData()
+    if (data.content) formData.append('content', data.content)
+    if (data.file) formData.append('file', data.file)
+    return request<SubmissionOut>(`/api/assignments/${assignmentId}/submit`, { method: 'POST', body: formData })
+  },
   getSubmissions: (assignmentId: number) =>
     request<SubmissionOut[]>(`/api/assignments/${assignmentId}/submissions`),
   grade: (submissionId: number, score: number) =>
@@ -209,6 +228,13 @@ export const scheduleApi = {
     return request<ScheduleItem[]>(`/api/schedule/timetable?${params}`)
   },
   events: () => request<EventOut[]>("/api/schedule/events"),
+  createEvent: (data: { title: string; event_type: string; event_date: string; description?: string }) =>
+    request<EventOut>("/api/schedule/events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteEvent: (id: number) =>
+    request<void>(`/api/schedule/events/${id}`, { method: "DELETE" }),
   upsertTimetable: (data: {
     grade: number
     class_num: number
@@ -224,6 +250,15 @@ export const scheduleApi = {
     }),
   deleteTimetable: (id: number) =>
     request<void>(`/api/schedule/timetable/${id}`, { method: "DELETE" }),
+  // ── 개인 일정 (학생/교사 누구나 본인 것만) ──────────────────────────────
+  personalEvents: () => request<PersonalEventOut[]>("/api/schedule/personal-events"),
+  createPersonalEvent: (data: { title: string; event_date: string; description?: string; color?: string }) =>
+    request<PersonalEventOut>("/api/schedule/personal-events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deletePersonalEvent: (id: number) =>
+    request<void>(`/api/schedule/personal-events/${id}`, { method: "DELETE" }),
 }
 
 // ── QnA ───────────────────────────────────────────────────────────────────────
@@ -266,6 +301,7 @@ export interface UserOut {
   subject?: string
   avatar_text: string
   avatar_color: string
+  profile_image?: string | null
   bio?: string
   phone?: string
   email?: string
@@ -294,10 +330,13 @@ export interface MessageOut {
   user_name: string
   avatar_text: string
   avatar_color: string
+  profile_image?: string | null
   is_teacher: boolean
   content: string
   created_at: string
   reactions: { emoji: string; count: number }[]
+  read_by?: { user_id: number; user_name: string; read_at: string }[]
+  read_count?: number
 }
 
 export interface AnnouncementOut {
@@ -319,6 +358,8 @@ export interface AssignmentOut {
   title: string
   description?: string
   subject: string
+  file_name?: string | null
+  file_url?: string | null
   teacher_id: number
   teacher_name: string
   due_date: string
@@ -332,8 +373,10 @@ export interface SubmissionOut {
   id: number
   assignment_id: number
   student_id: number
+  student_name?: string
   content?: string
-  file_name?: string
+  file_name?: string | null
+  file_url?: string | null
   score?: number
   submitted_at: string
 }
@@ -347,6 +390,7 @@ export interface GradeOut {
   total_students: number
   semester: string
   exam_type: string
+  exam_name?: string
   teacher?: string
 }
 
@@ -401,4 +445,12 @@ export interface NotificationOut {
   tag?: string
   is_read: boolean
   created_at: string
+}
+
+export interface PersonalEventOut {
+  id: number
+  title: string
+  event_date: string
+  description?: string
+  color?: string
 }

@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 import { APP_NAME, SCHOOL_NAME } from '@/lib/config'
 import { Eye, EyeOff, ArrowRight, GraduationCap, BookOpen } from 'lucide-react'
@@ -33,7 +34,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{
+    <div className="login-page" style={{
       width: '100vw', minHeight: '100vh',
       display: 'flex', alignItems: 'stretch',
       fontFamily: 'Pretendard, -apple-system, sans-serif',
@@ -54,7 +55,15 @@ export default function LoginPage() {
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 60 }}>
-            <div style={{ width: 46, height: 46, background: 'rgba(255,255,255,0.18)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900, color: 'white' }}>{APP_NAME[0]}</div>
+            <div style={{ width: 46, height: 46, background: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, overflow: 'hidden' }}>
+              <Image 
+                src="/icons/logo.png" 
+                alt="하랑 로고" 
+                width={60} 
+                height={60}
+                style={{ objectFit: 'cover', minWidth: '100%', minHeight: '100%' }}
+              />
+            </div>
             <div>
               <div style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>{APP_NAME}</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{SCHOOL_NAME}</div>

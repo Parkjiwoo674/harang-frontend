@@ -92,15 +92,15 @@ export default function DashboardPage() {
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden', fontFamily: 'Pretendard, -apple-system, sans-serif' }}>
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: '#f0f4f3', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
 
         {/* 상단 바 */}
         <div style={{ padding: '22px 32px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 900, color: '#1a2e2b', letterSpacing: -0.5 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: -0.5 }}>
               👋 안녕하세요, {user?.name || '사용자'}{user?.role === 'teacher' ? ' 선생님' : ' 학생'}!
             </h1>
-            <p style={{ fontSize: 13, color: '#6b8a85', marginTop: 3 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
               {dateStr} {currentPeriod > 0 ? `· 현재 ${currentPeriod}교시 진행 중` : ''}
             </p>
           </div>
@@ -113,12 +113,12 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'white', borderRadius: 9, padding: '8px 14px', border: '1.5px solid #e2e8e6', width: 220 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', borderRadius: 9, padding: '8px 14px', border: '1.5px solid var(--border)', width: 220 }}>
               <Search size={14} color="#aab8b5" />
-              <input placeholder="검색..." style={{ border: 'none', outline: 'none', fontSize: 13, color: '#1a2e2b', background: 'transparent', width: '100%', fontFamily: 'inherit' }} />
+              <input placeholder="검색..." style={{ border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)', background: 'transparent', width: '100%', fontFamily: 'inherit' }} />
             </div>
             <Link href="/notifications">
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'white', border: '1.5px solid #e2e8e6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-card)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
                 <Bell size={16} color="#3d5a56" />
                 {notifications.filter(n => !n.is_read).length > 0 && (
                   <span style={{ position: 'absolute', top: -2, right: -2, width: 16, height: 16, background: '#f97316', borderRadius: '50%', fontSize: 9, fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -149,9 +149,9 @@ export default function DashboardPage() {
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, minHeight: 0 }}>
 
             {/* 패널1: 미확인 공지 */}
-            <div style={{ background: 'white', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#1a2e2b' }}>📋 미확인 공지</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>📋 미확인 공지</span>
                 <Link href="/announcements" style={{ fontSize: 12, color: '#1a7a6e', fontWeight: 600, textDecoration: 'none' }}>전체 보기</Link>
               </div>
               <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -162,10 +162,10 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#1a2e2b' }}>{n.author_name}</span>
-                        <span style={{ fontSize: 10, color: '#aab8b5' }}>{new Date(n.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{n.author_name}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{new Date(n.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#3d5a56', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 5 }}>{n.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 5 }}>{n.title}</div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: TAG_COLORS[n.category]?.bg || '#f3f4f6', color: TAG_COLORS[n.category]?.color || '#6b7280' }}>{n.category}</span>
                       </div>
@@ -173,32 +173,32 @@ export default function DashboardPage() {
                   </div>
                 ))}
                 {unreadAnns.length === 0 && (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', fontSize: 13 }}>미확인 공지 없음 ✅</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>미확인 공지 없음 ✅</div>
                 )}
               </div>
             </div>
 
             {/* 패널2: 오늘 시간표 */}
-            <div style={{ background: 'white', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#1a2e2b' }}>📅 오늘 시간표</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>📅 오늘 시간표</span>
                 <Link href="/schedule" style={{ fontSize: 12, color: '#1a7a6e', fontWeight: 600, textDecoration: 'none' }}>{todayDay}요일</Link>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {todaySchedule.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', fontSize: 13 }}>오늘 수업 없음</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>오늘 수업 없음</div>
                 ) : todaySchedule.map(s => {
                   const isCurrent = s.period === currentPeriod
                   return (
                     <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 8, background: isCurrent ? '#e8f5f3' : 'transparent', border: `1.5px solid ${isCurrent ? '#1a7a6e' : 'transparent'}`, flex: 1 }}>
                       <span style={{ width: 20, textAlign: 'center', fontSize: 14, fontWeight: 800, color: isCurrent ? '#1a7a6e' : '#aab8b5', flexShrink: 0 }}>{s.period}</span>
-                      <span style={{ fontSize: 11, color: '#aab8b5', width: 80, flexShrink: 0 }}>{TIMES[s.period - 1]?.split('–')[0]}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', width: 80, flexShrink: 0 }}>{TIMES[s.period - 1]?.split('–')[0]}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1a2e2b' }}>{s.subject}</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{s.subject}</span>
                           {isCurrent && <span style={{ fontSize: 10, background: '#1a7a6e', color: 'white', padding: '1px 6px', borderRadius: 4, fontWeight: 700, whiteSpace: 'nowrap' }}>진행 중</span>}
                         </div>
-                        <div style={{ fontSize: 11, color: '#aab8b5', marginTop: 1 }}>{s.room}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s.room}</div>
                       </div>
                     </div>
                   )
@@ -207,9 +207,9 @@ export default function DashboardPage() {
             </div>
 
             {/* 패널3: 마감 임박 과제 */}
-            <div style={{ background: 'white', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#1a2e2b' }}>📝 마감 임박 과제</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>📝 마감 임박 과제</span>
                 <Link href="/assignments" style={{ fontSize: 12, color: '#1a7a6e', fontWeight: 600, textDecoration: 'none' }}>과제 채널</Link>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -218,10 +218,10 @@ export default function DashboardPage() {
                   const color = SUBJECT_COLORS[a.subject] || '#1a7a6e'
                   return (
                     <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: i < Math.min(pendingAssignments.length, 5) - 1 ? '1px solid #f0f4f3' : 'none', flex: 1 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid #e2e8e6`, background: 'white', flexShrink: 0 }} />
+                      <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid #e2e8e6`, background: 'var(--bg-card)', flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: color + '20', color, display: 'inline-block', marginBottom: 3 }}>{a.subject}</span>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1a2e2b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 800, flexShrink: 0, color: dday === 0 ? '#ef4444' : dday <= 3 ? '#f97316' : '#aab8b5' }}>
                         {dday === 0 ? 'D-Day' : dday < 0 ? `D+${Math.abs(dday)}` : `D-${dday}`}
@@ -230,16 +230,16 @@ export default function DashboardPage() {
                   )
                 })}
                 {pendingAssignments.length === 0 && (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', fontSize: 13 }}>미제출 과제 없음 🎉</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>미제출 과제 없음 🎉</div>
                 )}
               </div>
             </div>
 
             {/* 패널4: 반 채팅 미리보기 */}
-            <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #f0f4f3', flexShrink: 0 }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border-card)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: '#1a2e2b' }}>반 채팅</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>반 채팅</span>
                   <span style={{ fontSize: 10, background: '#f0fdf4', color: '#22c55e', padding: '2px 8px', borderRadius: 6, fontWeight: 700 }}>● LIVE</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -258,22 +258,22 @@ export default function DashboardPage() {
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 3 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: m.is_teacher ? '#1a7a6e' : '#1a2e2b' }}>{m.user_name}</span>
                         {m.is_teacher && <span style={{ fontSize: 9, background: '#e8f5f3', color: '#1a7a6e', padding: '1px 4px', borderRadius: 3, fontWeight: 700 }}>선생님</span>}
-                        <span style={{ fontSize: 10, color: '#aab8b5' }}>{new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: '#3d5a56', background: '#f6faf9', padding: '7px 10px', borderRadius: '4px 10px 10px 10px', lineHeight: 1.55, whiteSpace: 'pre-line', display: 'inline-block', maxWidth: '100%', border: '1px solid #e8f0ee' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg)', padding: '7px 10px', borderRadius: '4px 10px 10px 10px', lineHeight: 1.55, whiteSpace: 'pre-line', display: 'inline-block', maxWidth: '100%', border: '1px solid var(--border-card)' }}>
                         {m.content}
                       </div>
                     </div>
                   </div>
                 ))}
                 {chatRoomMessages.length === 0 && (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', fontSize: 13 }}>메시지가 없습니다</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>메시지가 없습니다</div>
                 )}
               </div>
               <div style={{ padding: '10px 14px', borderTop: '1px solid #f0f4f3', flexShrink: 0 }}>
                 <Link href="/chat" style={{ textDecoration: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f6faf9', borderRadius: 10, padding: '8px 12px', border: '1.5px solid #e2e8e6', cursor: 'pointer' }}>
-                    <span style={{ flex: 1, fontSize: 13, color: '#aab8b5', fontFamily: 'inherit' }}>채팅하러 가기...</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', borderRadius: 10, padding: '8px 12px', border: '1.5px solid var(--border)', cursor: 'pointer' }}>
+                    <span style={{ flex: 1, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'inherit' }}>채팅하러 가기...</span>
                     <Send size={13} color="#aab8b5" />
                   </div>
                 </Link>
@@ -301,4 +301,3 @@ function SummaryCard({ gradient, label, icon, num, sub }: { gradient: string; la
     </div>
   )
 }
-

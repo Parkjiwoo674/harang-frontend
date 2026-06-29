@@ -22,7 +22,7 @@ interface ChatCtx {
   react: (messageId: number, emoji: string) => Promise<void>
   refreshRooms: () => Promise<void>
   emitTyping: (roomId: number, isTyping: boolean) => void
-  typingUsers: Record<number, Record<number, string>>  // roomId → { userId: userName }
+  typingUsers: Record<number, Record<number, string>>
   getDmId: (aId: string, bId: string) => string
 }
 
@@ -48,7 +48,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null)
   const activeIdRef = useRef<number | null>(null)
 
-  // Socket.io 연결
   useEffect(() => {
     if (!user) return
     const token = localStorage.getItem('harang_token')
@@ -57,23 +56,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const socket = io(BASE, { auth: { token }, transports: ['websocket'] })
     socketRef.current = socket
 
-    socket.on('connect', () => {
+    socket.on('connect', async () => {
       console.log('🔌 Socket connected')
-      // 현재 활성 방에 재입장
-      if (activeIdRef.current) socket.emit('room:join', activeIdRef.current)
+      if (activeIdRef.current) {
+        socket.emit('room:join', activeIdRef.current)
+      }
     })
 
     // 실시간 메시지 수신
     socket.on('message:receive', (msg: MessageOut) => {
-      // 현재 보고 있는 방의 메시지면 추가
       if (msg.room_id === activeIdRef.current) {
         setMessages(prev => {
-          // 중복 방지
           if (prev.find(m => m.id === msg.id)) return prev
           return [...prev, msg]
         })
       }
-      // 방 목록의 last_message 업데이트
       setRooms(prev => prev.map(r =>
         r.id === msg.room_id
           ? {
@@ -86,7 +83,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ))
     })
 
-    // 타이핑 표시 — userId로 트래킹해야 stop이 정확히 매치됨
+    // 읽음 처리 수신 — 해당 메시지만 read_by 업데이트
+    socket.on('message:read', ({ room_id, user_id, user_name, message_ids }: { room_id: number; user_id: number; user_name: string; message_ids?: number[] }) => {
+      if (room_id === activeIdRef.current) {
+        const readSet = new Set(message_ids ?? [])
+        setMessages(prev => prev.map(m => {
+          // message_ids 있으면 해당 메시지만, 없으면 전체
+          if (message_ids && !readSet.has(m.id)) return m
+          if (m.read_by?.some((r: any) => r.user_id === user_id)) return m
+          return {
+            ...m,
+            read_by: [...(m.read_by ?? []), { user_id, user_name, read_at: new Date().toISOString() }],
+            read_count: (m.read_count ?? 0) + 1,
+          }
+        }))
+      }
+      setRooms(prev => prev.map(r =>
+        r.id === room_id ? { ...r, unread: 0 } : r
+      ))
+    })
+
     socket.on('typing:user', ({ userId, userName, roomId }: { userId: number; userName: string; roomId: number }) => {
       setTypingUsers(prev => ({
         ...prev,
@@ -104,9 +120,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on('disconnect', () => console.log('🔌 Socket disconnected'))
 
     return () => { socket.disconnect(); socketRef.current = null }
-  }, [user])
+  }, [user?._apiId])
 
-  // 방 목록 로드
   const refreshRooms = useCallback(async () => {
     if (!user) return
     try {
@@ -116,14 +131,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const firstId = data[0].id
         setActiveIdState(firstId)
         activeIdRef.current = firstId
-        socketRef.current?.emit('room:join', firstId)
+        // 소켓 연결됐을 때만 emit, 아니면 connect 이벤트에서 처리
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('room:join', firstId)
+        }
       }
-    } catch { /* backend not available */ }
+    } catch { }
   }, [user])
 
   useEffect(() => { refreshRooms() }, [user])
 
-  // 메시지 로드
   const loadMessages = useCallback(async (roomId: number) => {
     setLoadingMessages(true)
     try {
@@ -134,24 +151,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const setActiveId = useCallback((id: number) => {
-    // 이전 방 퇴장
     if (activeIdRef.current && activeIdRef.current !== id) {
       socketRef.current?.emit('room:leave', activeIdRef.current)
     }
     setActiveIdState(id)
     activeIdRef.current = id
-    // 새 방 입장
     socketRef.current?.emit('room:join', id)
     loadMessages(id)
     setRooms(prev => prev.map(r => r.id === id ? { ...r, unread: 0 } : r))
   }, [loadMessages])
 
-  // Socket.io로 메시지 전송 (REST fallback)
   const sendMessage = useCallback(async (roomId: number, content: string) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit('message:send', { roomId, content })
     } else {
-      // fallback: REST API
       const msg = await chatApi.sendMessage(roomId, content)
       setMessages(prev => [...prev, msg])
       setRooms(prev => prev.map(r =>
@@ -184,7 +197,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (activeIdRef.current) await loadMessages(activeIdRef.current)
   }, [loadMessages])
 
-  // 타이핑 상태 emit (debounce는 호출자 측에서 관리)
   const emitTyping = useCallback((roomId: number, isTyping: boolean) => {
     if (!socketRef.current?.connected) return
     socketRef.current.emit(isTyping ? 'typing:start' : 'typing:stop', roomId)

@@ -15,6 +15,7 @@ export interface User {
   subject?: string
   avatarText: string
   avatarColor: string
+  profileImage?: string | null
   _apiId: number
   homeroomGrade?: number
   homeroomClass?: number
@@ -31,6 +32,7 @@ function mapUser(u: UserOut): User {
     subject: u.subject,
     avatarText: u.avatar_text,
     avatarColor: u.avatar_color,
+    profileImage: u.profile_image || null,
     _apiId: u.id,
     homeroomGrade: u.homeroom_grade,
     homeroomClass: u.homeroom_class_num,
@@ -43,15 +45,16 @@ interface AuthCtx {
   error: string
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  setUser: (u: any) => void
 }
 
 const AuthContext = createContext<AuthCtx>({
   user: null, loading: false, error: '',
-  login: async () => {}, logout: () => {},
+  login: async () => {}, logout: () => {}, setUser: () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUserState] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -59,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('harang_token')
     if (!token) { setLoading(false); return }
     authApi.me()
-      .then(u => setUser(mapUser(u)))
+      .then(u => setUserState(mapUser(u)))
       .catch(() => localStorage.removeItem('harang_token'))
       .finally(() => setLoading(false))
   }, [])
@@ -71,10 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token } = await authApi.login(username, password)
       localStorage.setItem('harang_token', access_token)
       const me = await authApi.me()
-      setUser(mapUser(me))
+      setUserState(mapUser(me))
     } catch (e: any) {
-      const errorMsg = getErrorMessage(e)
-      setError(errorMsg)
+      setError(getErrorMessage(e))
       throw e
     } finally {
       setLoading(false)
@@ -83,11 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem('harang_token')
-    setUser(null)
+    setUserState(null)
+  }
+
+  const setUser = (u: any) => {
+    if (u && u.username !== undefined) setUserState(mapUser(u))
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   )

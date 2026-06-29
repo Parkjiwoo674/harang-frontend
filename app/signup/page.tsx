@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
 import { ArrowRight, ArrowLeft, Check, User, Lock, School, Hash, GraduationCap, BookOpen } from 'lucide-react'
 import { APP_NAME, SCHOOL_NAME } from '@/lib/config'
@@ -37,6 +38,12 @@ export default function SignupPage() {
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // 이메일 인증
+  const [emailToken, setEmailToken] = useState('')
+  const [emailCode, setEmailCode] = useState('')
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailVerifying, setEmailVerifying] = useState(false)
   const [form, setForm] = useState({
     role: 'student' as 'student' | 'teacher',
     name: '', phone: '', email: '',
@@ -54,7 +61,7 @@ export default function SignupPage() {
 
   const canNext = (() => {
     if (step === 0) return !!form.role
-    if (step === 1) return form.name.trim().length > 0 && form.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+    if (step === 1) return form.name.trim().length > 0 && form.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && emailVerified
     if (step === 2) {
       if (form.role === 'student') return !!(form.grade && form.class && form.number)
       return form.subject.trim().length > 0 && form.teacherCode.trim().length > 0
@@ -97,7 +104,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{
+    <div className="login-page" style={{
       width: '100vw', minHeight: '100vh', display: 'flex', alignItems: 'stretch',
       fontFamily: 'Pretendard, sans-serif', background: '#f0f4f3'
     }}>
@@ -113,7 +120,15 @@ export default function SignupPage() {
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 60 }}>
-            <div style={{ width: 42, height: 42, background: 'rgba(255,255,255,0.18)', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: 'white' }}>{APP_NAME[0]}</div>
+            <div style={{ width: 42, height: 42, background: 'white', borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, overflow: 'hidden' }}>
+              <Image 
+                src="/icons/logo.png" 
+                alt="하랑 로고" 
+                width={55} 
+                height={55}
+                style={{ objectFit: 'cover', minWidth: '100%', minHeight: '100%' }}
+              />
+            </div>
             <div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'white' }}>{APP_NAME}</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{SCHOOL_NAME}</div>
@@ -225,8 +240,83 @@ export default function SignupPage() {
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 7 }}>이메일 *</label>
-                <input className="input" type="email" placeholder="example@school.kr" value={form.email} onChange={e => update('email', e.target.value)} required />
-                <p style={{ fontSize: 11, color: '#6b8a85', marginTop: 4 }}>계정 복구 및 알림 수신용</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    className="input"
+                    type="email"
+                    placeholder="example@school.kr"
+                    value={form.email}
+                    onChange={e => { update('email', e.target.value); setEmailVerified(false); setEmailToken(''); setEmailCode('') }}
+                    disabled={emailVerified}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ flexShrink: 0, padding: '0 14px', fontSize: 12 }}
+                    disabled={emailSending || emailVerified || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)}
+                    onClick={async () => {
+                      setEmailSending(true)
+                      try {
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/send-verify-email`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: form.email }),
+                        })
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error)
+                        setEmailToken(data.token)
+                      } catch (e: any) {
+                        alert(e.message)
+                      } finally {
+                        setEmailSending(false)
+                      }
+                    }}
+                  >
+                    {emailVerified ? '✓ 인증완료' : emailSending ? '전송중...' : '인증코드 받기'}
+                  </button>
+                </div>
+                {emailToken && !emailVerified && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <input
+                      className="input"
+                      placeholder="인증코드 6자리"
+                      maxLength={6}
+                      value={emailCode}
+                      onChange={e => setEmailCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      style={{ flex: 1, letterSpacing: 4, textAlign: 'center', fontWeight: 700 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ flexShrink: 0, padding: '0 14px', fontSize: 12 }}
+                      disabled={emailVerifying || emailCode.length !== 6}
+                      onClick={async () => {
+                        setEmailVerifying(true)
+                        try {
+                          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/verify-email`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ token: emailToken, code: emailCode }),
+                        })
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error)
+                          setEmailVerified(true)
+                        } catch (e: any) {
+                          alert(e.message)
+                        } finally {
+                          setEmailVerifying(false)
+                        }
+                      }}
+                    >
+                      {emailVerifying ? '확인중...' : '확인'}
+                    </button>
+                  </div>
+                )}
+                {emailVerified && (
+                  <p style={{ fontSize: 12, color: '#22c55e', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>✓ 이메일 인증 완료</p>
+                )}
+                  <p style={{ fontSize: 11, color: '#6b8a85', marginTop: 4 }}>계정 복구 및 알림 수신용</p>
               </div>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#3d5a56', display: 'block', marginBottom: 7 }}>연락처 (선택)</label>

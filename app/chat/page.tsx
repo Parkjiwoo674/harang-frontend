@@ -1,4 +1,5 @@
 'use client'
+const MEDIA_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,7 +13,7 @@ import { Send, Plus, Trash2, Lock, Users, Search, Check, Edit3, Hash } from 'luc
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
     <div onClick={onChange} style={{ width: 44, height: 24, borderRadius: 12, background: on ? '#1a7a6e' : '#e2e8e6', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
-      <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'white', position: 'absolute', top: 3, left: on ? 23 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+      <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--bg-card)', position: 'absolute', top: 3, left: on ? 23 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
     </div>
   )
 }
@@ -27,13 +28,13 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 
 function ModalBox({ title, sub, onClose, width, children }: { title: string; sub?: string; onClose: () => void; width: number; children: React.ReactNode }) {
   return (
-    <div style={{ width, background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+    <div style={{ width, background: 'var(--bg-card)', borderRadius: 16, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          {title && <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1a2e2b' }}>{title}</h3>}
-          {sub && <p style={{ fontSize: 13, color: '#6b8a85', marginTop: 4 }}>{sub}</p>}
+          {title && <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{title}</h3>}
+          {sub && <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{sub}</p>}
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5', fontSize: 22, lineHeight: 1 }}>×</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 22, lineHeight: 1 }}>×</button>
       </div>
       {children}
     </div>
@@ -50,7 +51,7 @@ function SectionLabel({ label }: { label: string }) {
 
 function ActionBtn({ icon, title, onClick, color }: { icon: React.ReactNode; title: string; onClick: () => void; color?: string }) {
   return (
-    <button title={title} onClick={onClick} style={{ width: 28, height: 28, borderRadius: 7, border: 'none', background: '#f0f4f3', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color || '#3d5a56' }}>
+    <button title={title} onClick={onClick} style={{ width: 28, height: 28, borderRadius: 7, border: 'none', background: 'var(--bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color || '#3d5a56' }}>
       {icon}
     </button>
   )
@@ -64,10 +65,10 @@ function PersonRow({ user, right, selected, onClick }: { user: ChatUser; right?:
       onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#f8fbfa' }}
       onMouseLeave={e => { if (!selected) e.currentTarget.style.background = selected ? '#f0f9f7' : 'white' }}
     >
-      <div style={{ width: 34, height: 34, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>{user.avatar_text}</div>
+      {user.profile_image ? <img src={`${MEDIA_BASE}${user.profile_image}`} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>{user.avatar_text}</div>}
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#1a2e2b' }}>{user.name}</div>
-        <div style={{ fontSize: 11, color: '#aab8b5' }}>{user.role === 'student' ? `${user.grade}학년 ${user.class_num}반` : user.subject}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.role === 'student' ? `${user.grade}학년 ${user.class_num}반` : user.subject}</div>
       </div>
       {right}
     </div>
@@ -92,7 +93,7 @@ function RoomItem({ room, active, myApiId, isTeacher, allUsers, onClick, onDelet
       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', margin: '1px 6px', borderRadius: 9, cursor: 'pointer', transition: 'all 0.15s', background: active ? '#e8f5f3' : hov ? '#f3f7f6' : 'transparent', borderLeft: `3px solid ${active ? '#1a7a6e' : 'transparent'}` }}
     >
       {isDm && otherUser
-        ? <div style={{ width: 30, height: 30, borderRadius: '50%', background: otherUser.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: otherUser.avatar_text.length > 1 ? 10 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{otherUser.avatar_text}</div>
+        ? (otherUser.profile_image ? <img src={`${MEDIA_BASE}${otherUser.profile_image}`} alt="프로필" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 30, height: 30, borderRadius: '50%', background: otherUser.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: otherUser.avatar_text.length > 1 ? 10 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{otherUser.avatar_text}</div>)
         : <span style={{ fontSize: 18, flexShrink: 0 }}>{room.emoji}</span>
       }
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -102,10 +103,10 @@ function RoomItem({ room, active, myApiId, isTeacher, allUsers, onClick, onDelet
           </span>
           {room.is_teacher_only && !isTeacher && <Lock size={10} color="#aab8b5" />}
         </div>
-        {room.last_message && <div style={{ fontSize: 11, color: '#aab8b5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{room.last_message}</div>}
+        {room.last_message && <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{room.last_message}</div>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-        {room.last_time && !room.unread && <span style={{ fontSize: 10, color: '#aab8b5' }}>{room.last_time}</span>}
+        {room.last_time && !room.unread && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{room.last_time}</span>}
         {room.unread > 0 && !active && <span style={{ background: '#f97316', color: 'white', borderRadius: 8, fontSize: 10, fontWeight: 700, padding: '1px 5px' }}>{room.unread}</span>}
         {hov && onDelete && (
           <button onClick={e => { e.stopPropagation(); onDelete() }} style={{ width: 20, height: 20, border: 'none', background: '#fef2f2', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
@@ -140,7 +141,7 @@ function NewDmModal({ myApiId, existingRooms, allUsers, onClose, onOpen }: {
             return (
               <PersonRow key={u.id} user={u}
                 right={already
-                  ? <span style={{ fontSize: 11, color: '#aab8b5', fontWeight: 600 }}>대화 중</span>
+                  ? <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>대화 중</span>
                   : <span style={{ fontSize: 11, color: '#1a7a6e', fontWeight: 700 }}>대화 시작</span>
                 }
                 onClick={() => { onOpen(u); onClose() }}
@@ -175,9 +176,9 @@ function NewGroupModal({ myApiId, isTeacher, allUsers, onClose, onCreate }: {
     <Overlay onClose={onClose}>
       <ModalBox title="그룹 채팅방 만들기" sub="함께 대화할 친구나 선생님을 초대하세요" onClose={onClose} width={520}>
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#3d5a56', display: 'block', marginBottom: 8 }}>채팅방 이름 *</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>채팅방 이름 *</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ width: 44, height: 44, background: '#f0f4f3', borderRadius: 10, border: '1.5px solid #e2e8e6', fontSize: 22, cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{emoji}</button>
+            <button style={{ width: 44, height: 44, background: 'var(--bg)', borderRadius: 10, border: '1.5px solid var(--border)', fontSize: 22, cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{emoji}</button>
             <input className="input" placeholder="채팅방 이름 입력..." value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
@@ -187,14 +188,14 @@ function NewGroupModal({ myApiId, isTeacher, allUsers, onClose, onCreate }: {
           </div>
         </div>
         <div style={{ marginBottom: 10 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#3d5a56', display: 'block', marginBottom: 8 }}>
-            멤버 초대 <span style={{ fontSize: 11, color: '#aab8b5', fontWeight: 400 }}>({selected.length}명 선택됨)</span>
+          <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
+            멤버 초대 <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>({selected.length}명 선택됨)</span>
           </label>
           <div className="search-bar" style={{ marginBottom: 8 }}>
             <Search size={14} color="#aab8b5" />
             <input placeholder="이름 검색..." value={q} onChange={e => setQ(e.target.value)} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 220, overflow: 'auto', border: '1.5px solid #e2e8e6', borderRadius: 10, padding: '6px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 220, overflow: 'auto', border: '1.5px solid var(--border)', borderRadius: 10, padding: '6px 0' }}>
             {filtered.map(u => (
               <PersonRow key={u.id} user={u} selected={selected.includes(u.id)}
                 right={
@@ -208,10 +209,10 @@ function NewGroupModal({ myApiId, isTeacher, allUsers, onClose, onCreate }: {
           </div>
         </div>
         {isTeacher && (
-          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f6faf9', borderRadius: 10, border: '1px solid #e2e8e6' }}>
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg)', borderRadius: 10, border: '1px solid #e2e8e6' }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b', display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={13} color="#1a7a6e" /> 선생님만 글쓰기</div>
-              <div style={{ fontSize: 11, color: '#aab8b5' }}>학생은 읽기만 가능합니다</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={13} color="#1a7a6e" /> 선생님만 글쓰기</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>학생은 읽기만 가능합니다</div>
             </div>
             <Toggle on={teacherOnly} onChange={() => setTeacherOnly(!teacherOnly)} />
           </div>
@@ -258,17 +259,17 @@ function NewClassChannelModal({ onClose, onCreate }: {
             <div key={t.id} onClick={() => setKind(t.id as RoomOut['kind'])} style={{ padding: '12px 10px', borderRadius: 10, cursor: 'pointer', border: `2px solid ${kind === t.id ? '#1a7a6e' : '#e2e8e6'}`, background: kind === t.id ? '#f0f9f7' : 'white', textAlign: 'center' }}>
               <div style={{ fontSize: 24, marginBottom: 5 }}>{t.emoji}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: kind === t.id ? '#1a7a6e' : '#1a2e2b' }}>{t.label}</div>
-              <div style={{ fontSize: 10, color: '#aab8b5', marginTop: 3, lineHeight: 1.4 }}>{t.desc}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>{t.desc}</div>
             </div>
           ))}
         </div>
         <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#3d5a56', display: 'block', marginBottom: 7 }}>채널 이름 *</label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 7 }}>채널 이름 *</label>
           <input className="input" placeholder="채널 이름 입력..." value={name} onChange={e => setName(e.target.value)} />
         </div>
         {!sel?.teacherOnly && (
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f6faf9', borderRadius: 10, border: '1px solid #e2e8e6' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b', display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={13} color="#1a7a6e" /> 선생님만 글쓰기</div>
+          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--bg)', borderRadius: 10, border: '1px solid #e2e8e6' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}><Lock size={13} color="#1a7a6e" /> 선생님만 글쓰기</div>
             <Toggle on={tOnly} onChange={() => setTOnly(!tOnly)} />
           </div>
         )}
@@ -297,9 +298,9 @@ function DeleteModal({ room, onClose, onDelete }: { room: RoomOut; onClose: () =
       <ModalBox title="" onClose={onClose} width={380}>
         <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
           <div style={{ width: 56, height: 56, background: '#fef2f2', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28 }}>{room.emoji}</div>
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1a2e2b', marginBottom: 8 }}>{room.kind === 'dm' ? '대화 삭제' : '채팅방 삭제'}</h3>
-          <p style={{ fontSize: 13, color: '#6b8a85', lineHeight: 1.7, marginBottom: 24 }}>
-            <strong style={{ color: '#1a2e2b' }}>{room.name}</strong> {room.kind === 'dm' ? '대화를' : '채팅방을'} 삭제하시겠습니까?<br />모든 메시지가 영구적으로 삭제됩니다.
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>{room.kind === 'dm' ? '대화 삭제' : '채팅방 삭제'}</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 24 }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{room.name}</strong> {room.kind === 'dm' ? '대화를' : '채팅방을'} 삭제하시겠습니까?<br />모든 메시지가 영구적으로 삭제됩니다.
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onClose} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center', padding: '11px 0' }}>취소</button>
@@ -333,7 +334,7 @@ export default function ChatPage() {
 
   // 전체 유저 목록 로드 (DM 상대 선택, 아바타 표시용)
   useEffect(() => {
-    usersApi.list().then(setAllUsers).catch(() => {})
+    usersApi.list().then((data: any) => setAllUsers(data.filter((u: any) => u.role !== 'admin'))).catch(() => {})
   }, [])
 
   const classRooms = rooms.filter(r => r.kind.startsWith('class_'))
@@ -417,10 +418,10 @@ export default function ChatPage() {
       <div style={{ flex: 1, display: 'flex', height: '100vh', overflow: 'hidden' }}>
 
         {/* ── 왼쪽: 채팅방 목록 ── */}
-        <div style={{ width: 260, background: 'white', borderRight: '1px solid #e8f0ee', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-          <div style={{ padding: '18px 16px 12px', borderBottom: '1px solid #e8f0ee', flexShrink: 0 }}>
+        <div style={{ width: 260, background: 'var(--bg-card)', borderRight: '1px solid #e8f0ee', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+          <div style={{ padding: '18px 16px 12px', borderBottom: '1px solid var(--border-card)', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#1a2e2b', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 7 }}>
                 채팅
                 {totalUnread > 0 && <span style={{ background: '#f97316', color: 'white', borderRadius: 8, fontSize: 11, fontWeight: 700, padding: '1px 7px' }}>{totalUnread}</span>}
               </div>
@@ -430,7 +431,7 @@ export default function ChatPage() {
                 {isTeacher && <ActionBtn icon={<Hash size={14} />} title="반 채널 추가" onClick={() => setShowNewClass(true)} color="#6366f1" />}
               </div>
             </div>
-            <p style={{ fontSize: 11, color: '#aab8b5' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {user?.role === 'student' && user.grade && user.class
                 ? `${user.grade}학년 ${user.class}반`
                 : user?.role === 'teacher'
@@ -474,35 +475,35 @@ export default function ChatPage() {
               </>
             )}
             <div style={{ padding: '10px 10px 6px' }}>
-              <button onClick={() => setShowNewDm(true)} style={{ width: '100%', padding: '8px 12px', border: '1.5px dashed #c8ddd9', borderRadius: 8, background: 'transparent', cursor: 'pointer', color: '#6b8a85', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}
+              <button onClick={() => setShowNewDm(true)} style={{ width: '100%', padding: '8px 12px', border: '1.5px dashed #c8ddd9', borderRadius: 8, background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a7a6e'; e.currentTarget.style.color = '#1a7a6e' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#c8ddd9'; e.currentTarget.style.color = '#6b8a85' }}
               ><Edit3 size={13} /> 새 메시지 보내기</button>
-              <button onClick={() => setShowNewGroup(true)} style={{ width: '100%', padding: '8px 12px', border: '1.5px dashed #c8ddd9', borderRadius: 8, background: 'transparent', cursor: 'pointer', color: '#6b8a85', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+              <button onClick={() => setShowNewGroup(true)} style={{ width: '100%', padding: '8px 12px', border: '1.5px dashed #c8ddd9', borderRadius: 8, background: 'transparent', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a7a6e'; e.currentTarget.style.color = '#1a7a6e' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#c8ddd9'; e.currentTarget.style.color = '#6b8a85' }}
               ><Users size={13} /> 그룹 채팅 만들기</button>
             </div>
           </div>
 
-          <div style={{ padding: '10px 14px', borderTop: '1px solid #e8f0ee', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+          <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border-card)', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-            <span style={{ fontSize: 11, color: '#aab8b5' }}>온라인</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>온라인</span>
           </div>
         </div>
 
         {/* ── 오른쪽: 채팅 영역 ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fafcfc', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' }}>
           {activeRoom ? (
             <>
               {/* 헤더 */}
-              <div style={{ padding: '13px 24px', background: 'white', borderBottom: '1px solid #e8f0ee', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+              <div style={{ padding: '13px 24px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-card)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
                 {activeRoom.kind === 'dm' ? (
                   (() => {
                     const otherId = activeRoom.member_ids.find((id: number) => id !== myApiId)
                     const other = allUsers.find(u => u.id === otherId)
                     return other ? (
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: other.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: other.avatar_text.length > 1 ? 11 : 15, fontWeight: 700, color: 'white', flexShrink: 0 }}>{other.avatar_text}</div>
+                      other.profile_image ? <img src={`${MEDIA_BASE}${other.profile_image}`} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: other.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: other.avatar_text.length > 1 ? 11 : 15, fontWeight: 700, color: 'white', flexShrink: 0 }}>{other.avatar_text}</div>
                     ) : null
                   })()
                 ) : (
@@ -510,7 +511,7 @@ export default function ChatPage() {
                 )}
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: '#1a2e2b' }}>{roomDisplayName()}</span>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{roomDisplayName()}</span>
                     {activeRoom.is_teacher_only && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, background: '#fff7ed', color: '#f97316', padding: '2px 7px', borderRadius: 5, fontWeight: 700 }}>
                         <Lock size={9} /> 선생님 전용
@@ -518,7 +519,7 @@ export default function ChatPage() {
                     )}
                     {activeRoom.kind === 'dm' && <span style={{ fontSize: 10, background: '#eff6ff', color: '#3b82f6', padding: '2px 7px', borderRadius: 5, fontWeight: 700 }}>DM</span>}
                   </div>
-                  <div style={{ fontSize: 12, color: '#aab8b5', marginTop: 1 }}>{roomSubtitle()}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{roomSubtitle()}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 11, background: '#f0fdf4', color: '#22c55e', padding: '3px 9px', borderRadius: 6, fontWeight: 700 }}>🟢 LIVE</span>
@@ -533,11 +534,11 @@ export default function ChatPage() {
               {/* 메시지 목록 */}
               <div style={{ flex: 1, overflow: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {loadingMessages ? (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5' }}>불러오는 중...</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>불러오는 중...</div>
                 ) : messages.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', gap: 10, paddingTop: 80 }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: 10, paddingTop: 80 }}>
                     <span style={{ fontSize: 48 }}>{activeRoom.kind === 'dm' ? '👋' : activeRoom.emoji}</span>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#3d5a56' }}>{activeRoom.kind === 'dm' ? `${roomDisplayName()}님과의 대화` : activeRoom.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-secondary)' }}>{activeRoom.kind === 'dm' ? `${roomDisplayName()}님과의 대화` : activeRoom.name}</div>
                     <div style={{ fontSize: 13, textAlign: 'center', lineHeight: 1.6 }}>{activeRoom.kind === 'dm' ? '첫 메시지를 보내보세요!' : (activeRoom.description || '채팅을 시작해보세요!')}</div>
                   </div>
                 ) : (
@@ -551,7 +552,7 @@ export default function ChatPage() {
                       return (
                         <div key={m.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 8, marginTop: prevSame ? 3 : 14 }}>
                           {!prevSame && !isMe
-                            ? <div style={{ width: 34, height: 34, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>
+                            ? (m.profile_image ? <img src={`${MEDIA_BASE}${m.profile_image}`} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
                             : !isMe ? <div style={{ width: 34, flexShrink: 0 }} /> : null
                           }
                           <div style={{ maxWidth: 480 }}>
@@ -559,14 +560,14 @@ export default function ChatPage() {
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: m.is_teacher ? '#1a7a6e' : '#1a2e2b' }}>{m.user_name}</span>
                                 {m.is_teacher && <span style={{ fontSize: 10, background: '#e8f5f3', color: '#1a7a6e', padding: '1px 5px', borderRadius: 4, fontWeight: 700 }}>선생님</span>}
-                                <span style={{ fontSize: 10, color: '#aab8b5' }}>{timeStr}</span>
+                                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{timeStr}</span>
                               </div>
                             )}
                             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, flexDirection: isMe ? 'row-reverse' : 'row' }}>
                               <div style={{ padding: '9px 13px', borderRadius: isMe ? '14px 4px 14px 14px' : '4px 14px 14px 14px', fontSize: 14, color: isMe ? 'white' : '#1a2e2b', lineHeight: 1.6, background: isMe ? '#1a7a6e' : 'white', border: isMe ? 'none' : '1px solid #e8f0ee', whiteSpace: 'pre-line', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                 {m.content}
                               </div>
-                              {isMe && <span style={{ fontSize: 10, color: '#aab8b5', flexShrink: 0, paddingBottom: 2 }}>{timeStr}</span>}
+                              {isMe && <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0, paddingBottom: 2 }}>{timeStr}</span>}
                             </div>
                           </div>
                         </div>
@@ -576,7 +577,7 @@ export default function ChatPage() {
                     return (
                       <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: prevSame ? 2 : 14 }}>
                         {!prevSame
-                          ? <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 14, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>
+                          ? (m.profile_image ? <img src={`${MEDIA_BASE}${m.profile_image}`} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 14, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
                           : <div style={{ width: 38, flexShrink: 0 }} />
                         }
                         <div style={{ flex: 1 }}>
@@ -584,16 +585,16 @@ export default function ChatPage() {
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 4 }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: m.is_teacher ? '#1a7a6e' : '#1a2e2b' }}>{m.user_name}</span>
                               {m.is_teacher && <span style={{ fontSize: 10, background: '#e8f5f3', color: '#1a7a6e', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>선생님</span>}
-                              <span style={{ fontSize: 11, color: '#aab8b5' }}>{timeStr}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeStr}</span>
                             </div>
                           )}
-                          <div style={{ display: 'inline-block', background: isMe ? '#e8f5f3' : 'white', padding: '9px 13px', borderRadius: isMe ? '14px 14px 4px 14px' : '4px 14px 14px 14px', fontSize: 14, color: '#1a2e2b', lineHeight: 1.65, maxWidth: 580, border: isMe ? '1px solid #c8e6e0' : '1px solid #e8f0ee', whiteSpace: 'pre-line' }}>
+                          <div style={{ display: 'inline-block', background: isMe ? '#e8f5f3' : 'white', padding: '9px 13px', borderRadius: isMe ? '14px 14px 4px 14px' : '4px 14px 14px 14px', fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.65, maxWidth: 580, border: isMe ? '1px solid #c8e6e0' : '1px solid #e8f0ee', whiteSpace: 'pre-line' }}>
                             {m.content}
                           </div>
                           {m.reactions.length > 0 && (
                             <div style={{ display: 'flex', gap: 4, marginTop: 5, flexWrap: 'wrap' }}>
                               {m.reactions.map((r: { emoji: string; count: number }) => (
-                                <span key={r.emoji} style={{ fontSize: 12, background: 'white', border: '1.5px solid #e2e8e6', borderRadius: 12, padding: '2px 8px', cursor: 'pointer', fontWeight: 600, color: '#3d5a56' }}>{r.emoji} {r.count}</span>
+                                <span key={r.emoji} style={{ fontSize: 12, background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '2px 8px', cursor: 'pointer', fontWeight: 600, color: 'var(--text-secondary)' }}>{r.emoji} {r.count}</span>
                               ))}
                             </div>
                           )}
@@ -606,10 +607,10 @@ export default function ChatPage() {
               </div>
 
               {/* 입력창 */}
-              <div style={{ padding: '12px 28px 18px', background: 'white', borderTop: '1px solid #e8f0ee', flexShrink: 0 }}>
+              <div style={{ padding: '12px 28px 18px', background: 'var(--bg-card)', borderTop: '1px solid var(--border-card)', flexShrink: 0 }}>
                 {/* 타이핑 중 표시 */}
                 {activeRoom && Object.keys(typingUsers[activeRoom.id] || {}).length > 0 && (
-                  <div style={{ fontSize: 11, color: '#6b8a85', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ display: 'flex', gap: 2 }}>
                       {[0,1,2].map(i => <span key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: '#aab8b5', display: 'inline-block', animation: `bounce 1.2s ${i * 0.2}s infinite` }} />)}
                     </span>
@@ -617,30 +618,30 @@ export default function ChatPage() {
                   </div>
                 )}
                 {canSend ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f6faf9', border: '1.5px solid #dde8e5', borderRadius: 14, padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', border: '1.5px solid #dde8e5', borderRadius: 14, padding: '10px 14px' }}>
                     <input
                       value={input}
                       onChange={e => handleInputChange(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
                       placeholder={activeRoom.kind === 'dm' ? `${roomDisplayName()}에게 메시지 보내기...` : `${activeRoom.name} 채널에 메시지 보내기...`}
-                      style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#1a2e2b' }}
+                      style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: 'var(--text-primary)' }}
                     />
                     <button onClick={send} disabled={!input.trim()} style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: input.trim() ? '#1a7a6e' : '#e2e8e6', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.2s' }}>
                       <Send size={15} color={input.trim() ? 'white' : '#aab8b5'} />
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f6faf9', border: '1.5px solid #e2e8e6', borderRadius: 14, padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 14, padding: '12px 16px' }}>
                     <Lock size={16} color="#aab8b5" />
-                    <span style={{ fontSize: 14, color: '#aab8b5' }}>이 채널은 선생님만 메시지를 보낼 수 있습니다</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>이 채널은 선생님만 메시지를 보낼 수 있습니다</span>
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#aab8b5', gap: 12 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: 12 }}>
               <div style={{ fontSize: 48 }}>💬</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#3d5a56' }}>채팅을 선택하세요</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-secondary)' }}>채팅을 선택하세요</div>
               <div style={{ fontSize: 13 }}>왼쪽 목록에서 채팅방을 선택하거나 새 메시지를 보내세요</div>
               <button onClick={() => setShowNewDm(true)} className="btn btn-primary" style={{ marginTop: 8, padding: '10px 24px' }}>
                 <Edit3 size={14} /> 새 메시지 시작

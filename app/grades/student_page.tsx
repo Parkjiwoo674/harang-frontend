@@ -1,266 +1,283 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { gradesApi, GradeOut } from '@/lib/api'
-import { BarChart2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Search } from 'lucide-react'
 
-const SUBJECTS = ['국어', '수학', '영어', '물리', '역사', '프로그래밍', '체육']
-const EXAM_TYPES = ['중간고사', '기말고사', '수행평가']
-const SEMESTERS = ['2024-1', '2024-2', '2025-1', '2025-2']
+const GRADES_LIST = [1, 2, 3]
+const SEMESTERS_LIST = [{ value: 1, label: '1학기' }, { value: 2, label: '2학기' }]
+const EXAM_TYPE_FILTER = [
+  { value: 'all', label: '전체' },
+  { value: '중간고사', label: '중간고사' },
+  { value: '기말고사', label: '기말고사' },
+  { value: '수행평가', label: '수행평가' },
+]
 
-const subjectColors: Record<string, string> = {
-  '국어': '#ef4444', '수학': '#8b5cf6', '영어': '#3b82f6',
-  '물리': '#f97316', '역사': '#d946ef', '프로그래밍': '#22c55e', '체육': '#14b8a6',
-}
-
-function gradeLabel(score: number) {
+function gradeLabel(score: number, subject?: string) {
+  const is3tier = ['체육', '미술', '음악'].includes(subject || '')
+  if (is3tier) {
+    if (score >= 80) return 'A'
+    if (score >= 60) return 'B'
+    return 'C'
+  }
   if (score >= 90) return 'A'
   if (score >= 80) return 'B'
   if (score >= 70) return 'C'
   if (score >= 60) return 'D'
-  return 'F'
+  return 'E'
 }
 
-function gradeColor(score: number) {
-  if (score >= 90) return '#22c55e'
-  if (score >= 80) return '#3b82f6'
-  if (score >= 70) return '#f97316'
-  if (score >= 60) return '#eab308'
-  return '#ef4444'
+function rankGrade(rank: number, total: number) {
+  const pct = (rank / total) * 100
+  if (pct <= 4) return 1
+  if (pct <= 11) return 2
+  if (pct <= 23) return 3
+  if (pct <= 40) return 4
+  if (pct <= 60) return 5
+  if (pct <= 77) return 6
+  if (pct <= 89) return 7
+  if (pct <= 96) return 8
+  return 9
 }
 
-// 과목×시험종류 표 데이터 빌더
-function buildTable(grades: GradeOut[]) {
-  const map: Record<string, Record<string, GradeOut>> = {}
-  grades.forEach(g => {
-    if (!map[g.subject]) map[g.subject] = {}
-    map[g.subject][g.exam_type || '중간고사'] = g
+const dropdownStyle: React.CSSProperties = {
+  padding: '6px 28px 6px 10px',
+  fontSize: 14,
+  border: '1px solid #b0bec5',
+  borderRadius: 4,
+  background: 'var(--bg-card)',
+  color: 'var(--text-primary)',
+  fontFamily: 'inherit',
+  fontWeight: 400,
+  outline: 'none',
+  cursor: 'pointer',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 8px center',
+  minWidth: 80,
+}
+
+// 나이스 스타일 표 색상
+const thStyle: React.CSSProperties = {
+  padding: '8px 10px',
+  fontSize: 12,
+  fontWeight: 600,
+  color: 'var(--text-primary)',
+  background: '#ecf0f1',
+  border: '1px solid #bdc3c7',
+  textAlign: 'center',
+  whiteSpace: 'nowrap',
+}
+const tdStyle: React.CSSProperties = {
+  padding: '7px 10px',
+  fontSize: 13,
+  border: '1px solid var(--border-card)',
+  textAlign: 'center',
+  color: 'var(--text-primary)',
+  background: 'var(--bg-card)',
+}
+const tdLeftStyle: React.CSSProperties = { ...tdStyle, textAlign: 'left', fontWeight: 600 }
+
+interface Row {
+  subject: string
+  examType: string
+  examName: string
+  score: number
+  rank?: number
+  total_students?: number
+  prev_score?: number | null
+}
+
+const EXAM_ORDER = ['중간고사', '기말고사', '수행평가']
+
+function buildRows(grades: GradeOut[], examTypeFilter: string): Record<string, Row[]> {
+  const filtered = examTypeFilter === 'all' ? grades : grades.filter(g => g.exam_type === examTypeFilter)
+  const map: Record<string, Row[]> = {}
+  filtered.forEach(g => {
+    if (!map[g.subject]) map[g.subject] = []
+    map[g.subject].push({
+      subject: g.subject,
+      examType: g.exam_type || '중간고사',
+      examName: (g as any).exam_name || g.exam_type || '중간고사',
+      score: g.score,
+      rank: g.rank,
+      total_students: g.total_students,
+      prev_score: g.prev_score,
+    })
+  })
+  // 중간고사 → 기말고사 → 수행평가 순 정렬
+  Object.keys(map).forEach(subj => {
+    map[subj].sort((a, b) => EXAM_ORDER.indexOf(a.examType) - EXAM_ORDER.indexOf(b.examType))
   })
   return map
 }
 
 export default function GradesPage() {
   const { user } = useAuth()
+  const [selectedGrade, setSelectedGrade] = useState(user?.grade || 1)
+  const [selectedSemester, setSelectedSemester] = useState(1)
+  const [examTypeFilter, setExamTypeFilter] = useState('all')
   const [grades, setGrades] = useState<GradeOut[]>([])
-  const [loading, setLoading] = useState(true)
-  const [semester, setSemester] = useState('2024-2')
+  const [queried, setQueried] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    gradesApi.mine().then(setGrades).finally(() => setLoading(false))
-  }, [])
+  const semester = `${selectedGrade}-${selectedSemester}`
 
-  const filtered = grades.filter(g => g.semester === semester)
-  const table = buildTable(filtered)
-  const subjects = Object.keys(table)
-
-  // 시험 종류별 평균
-  const examAvg = (examType: string) => {
-    const scores = subjects.map(s => table[s][examType]?.score).filter(s => s != null) as number[]
-    if (!scores.length) return null
-    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+  const handleSearch = async () => {
+    setLoading(true)
+    try {
+      const all = await gradesApi.mine()
+      setGrades(all.filter((g: GradeOut) => g.semester === semester))
+      setQueried(true)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // 전체 평균
-  const totalAvg = filtered.length
-    ? Math.round(filtered.reduce((a, b) => a + b.score, 0) / filtered.length)
-    : null
-
-  if (loading) return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh' }}>
-      <Sidebar />
-      <main className="main-layout" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aab8b5' }}>불러오는 중...</main>
-    </div>
-  )
+  const table = buildRows(grades, examTypeFilter)
+  const subjects = Object.keys(table)
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       <Sidebar />
-      <main className="main-layout" style={{ flex: 1 }}>
-        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <BarChart2 size={24} color="#1a7a6e" /> 성적 조회
-            </h1>
-            <p>{user?.grade}학년 {user?.class}반 {user?.number}번 · {user?.name}</p>
+      <main className="main-layout" style={{ flex: 1, background: 'var(--bg)' }}>
+
+        {/* 상단 조회 바 — 나이스 스타일 */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 6, padding: '14px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 13, color: '#555', fontWeight: 600, whiteSpace: 'nowrap' }}>학년</label>
+            <select value={selectedGrade} onChange={e => setSelectedGrade(Number(e.target.value))} style={dropdownStyle}>
+              {GRADES_LIST.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
           </div>
-          {/* 학기 선택 */}
-          <div style={{ display: 'flex', gap: 6 }}>
-            {SEMESTERS.map(s => (
-              <button key={s} onClick={() => setSemester(s)} className="btn" style={{
-                padding: '7px 14px', fontSize: 13,
-                background: semester === s ? '#1a7a6e' : 'white',
-                color: semester === s ? 'white' : '#6b8a85',
-                border: `1.5px solid ${semester === s ? '#1a7a6e' : '#e2e8e6'}`,
-              }}>{s}</button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 13, color: '#555', fontWeight: 600, whiteSpace: 'nowrap' }}>학기</label>
+            <select value={selectedSemester} onChange={e => setSelectedSemester(Number(e.target.value))} style={dropdownStyle}>
+              {SEMESTERS_LIST.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 13, color: '#555', fontWeight: 600, whiteSpace: 'nowrap' }}>성적기준</label>
+            <select value={examTypeFilter} onChange={e => setExamTypeFilter(e.target.value)} style={{ ...dropdownStyle, minWidth: 100 }}>
+              {EXAM_TYPE_FILTER.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+            </select>
+          </div>
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 24px',
+              background: '#1a5276',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontFamily: 'inherit',
+            }}
+          >
+            <Search size={14} /> {loading ? '조회 중...' : '조회'}
+          </button>
         </div>
 
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: '#aab8b5' }}>
-            <BarChart2 size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-            <p>{semester} 성적이 없습니다</p>
+        {!queried ? (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)', background: 'var(--bg-card)', borderRadius: 6, border: '1px solid var(--border-card)' }}>
+            <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+            <p style={{ fontSize: 14 }}>학년, 학기, 성적기준을 선택 후 조회하세요.</p>
+          </div>
+        ) : grades.length === 0 ? (
+          <div style={{ background: 'var(--bg-card)', borderRadius: 6, border: '1px solid var(--border-card)', padding: '60px 0', textAlign: 'center', color: '#888', fontSize: 14 }}>
+            {selectedGrade}학년 {selectedSemester}학기 성적이 없습니다.
           </div>
         ) : (
-          <>
-            {/* 요약 카드 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-              <div className="card" style={{ padding: '18px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: 12, color: '#6b8a85', marginBottom: 8 }}>전체 평균</div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: totalAvg != null ? gradeColor(totalAvg) : '#aab8b5' }}>{totalAvg ?? '-'}점</div>
-                <div style={{ fontSize: 13, color: '#aab8b5', marginTop: 4 }}>{totalAvg != null ? gradeLabel(totalAvg) + '등급' : ''}</div>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 6, border: '1px solid var(--border-card)', overflow: 'hidden' }}>
+            {/* 타이틀 */}
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-card)', background: 'var(--bg)' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
+                성적 - {selectedGrade}학년 {selectedSemester}학기 {examTypeFilter !== 'all' ? examTypeFilter : '전체'}
               </div>
-              {EXAM_TYPES.map(et => {
-                const avg = examAvg(et)
-                return (
-                  <div key={et} className="card" style={{ padding: '18px 20px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 12, color: '#6b8a85', marginBottom: 8 }}>{et} 평균</div>
-                    <div style={{ fontSize: 32, fontWeight: 900, color: avg != null ? gradeColor(avg) : '#aab8b5' }}>{avg ?? '-'}점</div>
-                    <div style={{ fontSize: 13, color: '#aab8b5', marginTop: 4 }}>{avg != null ? gradeLabel(avg) + '등급' : '미입력'}</div>
-                  </div>
-                )
-              })}
+              <div style={{ fontSize: 12, color: '#888' }}>
+                {user?.grade}학년 {user?.class}반 {user?.number}번 · {user?.name}
+              </div>
             </div>
 
-            {/* 성적표 표 */}
-            <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #e8f0ee', background: '#f6faf9' }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#1a2e2b' }}>📋 {semester} 성적표</span>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f6faf9' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b8a85', borderBottom: '1.5px solid #e8f0ee', whiteSpace: 'nowrap' }}>과목</th>
-                      {EXAM_TYPES.map(et => (
-                        <th key={et} colSpan={3} style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#6b8a85', borderBottom: '1.5px solid #e8f0ee', borderLeft: '1px solid #e8f0ee', whiteSpace: 'nowrap' }}>{et}</th>
-                      ))}
-                    </tr>
-                    <tr style={{ background: '#fafcfc' }}>
-                      <th style={{ padding: '8px 16px', borderBottom: '1px solid #e8f0ee' }} />
-                      {EXAM_TYPES.map(et => (
-                        <>
-                          <th key={`${et}-score`} style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#aab8b5', borderBottom: '1px solid #e8f0ee', borderLeft: '1px solid #e8f0ee' }}>점수</th>
-                          <th key={`${et}-grade`} style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#aab8b5', borderBottom: '1px solid #e8f0ee' }}>등급</th>
-                          <th key={`${et}-rank`} style={{ padding: '8px 10px', textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#aab8b5', borderBottom: '1px solid #e8f0ee' }}>순위</th>
-                        </>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subjects.map((subject, i) => {
-                      const color = subjectColors[subject] || '#1a7a6e'
-                      return (
-                        <tr key={subject} style={{ background: i % 2 === 0 ? 'white' : '#fafcfc' }}>
-                          <td style={{ padding: '12px 16px', borderBottom: '1px solid #f0f4f3' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                              <span style={{ fontWeight: 700, fontSize: 14, color: '#1a2e2b' }}>{subject}</span>
-                            </div>
+            {/* 나이스 성적표 */}
+            <div style={{ overflowX: 'auto', padding: '16px 20px' }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 700 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>과목</th>
+                    <th style={thStyle}>구분</th>
+                    <th style={thStyle}>고사/영역명</th>
+                    <th style={thStyle}>받은 점수</th>
+                    <th style={thStyle}>원점수</th>
+                    <th style={thStyle}>성취도</th>
+                    <th style={thStyle}>석차등급</th>
+                    <th style={thStyle}>석차(동석차수)/수강자수</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjects.map(subject => {
+                    const rows = table[subject]
+                    // 원점수: 각 점수의 가중 합계 (단순 평균으로 대체)
+                    const rawScore = Math.round(rows.reduce((a, b) => a + b.score, 0) / rows.length)
+                    const achievement = gradeLabel(rawScore, subject)
+                    const rankRow = rows.find(r => r.rank != null)
+                    const rankGradeVal = rankRow ? rankGrade(rankRow.rank!, rankRow.total_students!) : null
+
+                    return rows.map((row, i) => (
+                      <tr key={`${subject}-${i}`} style={{ background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
+                        {i === 0 && (
+                          <td rowSpan={rows.length} style={{ ...tdLeftStyle, verticalAlign: 'middle', background: 'var(--bg)', fontWeight: 700, fontSize: 13 }}>
+                            {subject}
                           </td>
-                          {EXAM_TYPES.map(et => {
-                            const g = table[subject]?.[et]
-                            return (
-                              <>
-                                <td key={`${et}-score`} style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '1px solid #f0f4f3', borderLeft: '1px solid #f0f4f3' }}>
-                                  {g ? (
-                                    <div>
-                                      <span style={{ fontSize: 16, fontWeight: 900, color: gradeColor(g.score) }}>{g.score}</span>
-                                      {g.prev_score != null && (
-                                        <span style={{ fontSize: 10, color: g.score > g.prev_score ? '#22c55e' : g.score < g.prev_score ? '#ef4444' : '#aab8b5', marginLeft: 4 }}>
-                                          {g.score > g.prev_score ? `▲${g.score - g.prev_score}` : g.score < g.prev_score ? `▼${g.prev_score - g.score}` : '-'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : <span style={{ color: '#e2e8e6' }}>—</span>}
-                                </td>
-                                <td key={`${et}-grade`} style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '1px solid #f0f4f3' }}>
-                                  {g ? (
-                                    <span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 12, fontWeight: 700, background: gradeColor(g.score) + '20', color: gradeColor(g.score) }}>
-                                      {gradeLabel(g.score)}
-                                    </span>
-                                  ) : <span style={{ color: '#e2e8e6' }}>—</span>}
-                                </td>
-                                <td key={`${et}-rank`} style={{ padding: '12px 10px', textAlign: 'center', borderBottom: '1px solid #f0f4f3' }}>
-                                  {g?.rank ? (
-                                    <span style={{ fontSize: 13, color: '#3d5a56' }}>
-                                      {g.rank}<span style={{ fontSize: 10, color: '#aab8b5' }}>/{g.total_students}</span>
-                                    </span>
-                                  ) : <span style={{ color: '#e2e8e6' }}>—</span>}
-                                </td>
-                              </>
-                            )
-                          })}
-                        </tr>
-                      )
-                    })}
-                    {/* 평균 행 */}
-                    <tr style={{ background: '#f0f9f7', borderTop: '2px solid #e8f0ee' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 800, fontSize: 13, color: '#1a7a6e' }}>평균</td>
-                      {EXAM_TYPES.map(et => {
-                        const avg = examAvg(et)
-                        return (
+                        )}
+                        <td style={tdStyle}>{row.examType === '수행평가' ? '수행' : '지필'}</td>
+                        <td style={tdStyle}>{row.examName}</td>
+                        <td style={{ ...tdStyle, fontWeight: 700, color: row.score >= 90 ? '#1a7a6e' : row.score >= 60 ? '#2c3e50' : '#c0392b' }}>
+                          {row.score.toFixed(2)}
+                        </td>
+                        {i === 0 && (
                           <>
-                            <td key={`${et}-avg`} colSpan={3} style={{ padding: '12px 10px', textAlign: 'center', borderLeft: '1px solid #e8f0ee' }}>
-                              {avg != null ? (
-                                <span style={{ fontSize: 15, fontWeight: 800, color: gradeColor(avg) }}>{avg}점</span>
-                              ) : <span style={{ color: '#e2e8e6' }}>—</span>}
+                            <td rowSpan={rows.length} style={{ ...tdStyle, verticalAlign: 'middle', fontWeight: 700, fontSize: 14 }}>
+                              {rawScore}
+                            </td>
+                            <td rowSpan={rows.length} style={{ ...tdStyle, verticalAlign: 'middle', fontWeight: 700, fontSize: 14, color: '#1a5276' }}>
+                              {achievement}
+                            </td>
+                            <td rowSpan={rows.length} style={{ ...tdStyle, verticalAlign: 'middle', fontWeight: 700, fontSize: 14, color: rankGradeVal != null ? (rankGradeVal <= 3 ? '#c0392b' : '#2c3e50') : '#aab8b5' }}>
+                              {rankGradeVal ?? '—'}
+                            </td>
+                            <td rowSpan={rows.length} style={{ ...tdStyle, verticalAlign: 'middle', fontSize: 13, color: '#555' }}>
+                              {rankRow ? `${rankRow.rank}(${rankRow.rank})/${rankRow.total_students}` : '—'}
                             </td>
                           </>
-                        )
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                        )}
+                      </tr>
+                    ))
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {/* 과목별 점수 바 */}
-            <div className="card">
-              <div className="card-header"><span className="card-title">📊 과목별 점수 분포</span></div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {subjects.map(subject => {
-                  const subjectGrades = filtered.filter(g => g.subject === subject)
-                  const color = subjectColors[subject] || '#1a7a6e'
-                  return (
-                    <div key={subject}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b' }}>{subject}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                          {EXAM_TYPES.map(et => {
-                            const g = table[subject]?.[et]
-                            return g ? (
-                              <span key={et} style={{ fontSize: 12, color: '#6b8a85' }}>
-                                {et.slice(0, 2)} <strong style={{ color: gradeColor(g.score) }}>{g.score}</strong>
-                              </span>
-                            ) : null
-                          })}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {EXAM_TYPES.map(et => {
-                          const g = table[subject]?.[et]
-                          if (!g) return null
-                          return (
-                            <div key={et} style={{ flex: 1 }}>
-                              <div style={{ height: 8, background: '#e8f0ee', borderRadius: 4, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${g.score}%`, background: color, borderRadius: 4, opacity: et === '중간고사' ? 1 : et === '기말고사' ? 0.75 : 0.5 }} />
-                              </div>
-                              <div style={{ fontSize: 10, color: '#aab8b5', marginTop: 2, textAlign: 'center' }}>{et.slice(0, 2)}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+            {/* 주석 */}
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-card)', background: 'var(--bg)' }}>
+              <p style={{ fontSize: 11, color: '#888', margin: 0, lineHeight: 1.8 }}>
+                ※ 학교에서 성적을 처리한 후 반영된 자료에 한하여 조회 가능합니다.<br />
+                ※ 각종 증빙자료 용도로 활용될 효력이 없는 단순 열람용 자료입니다.
+              </p>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>

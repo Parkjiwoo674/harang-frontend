@@ -72,8 +72,8 @@ export default function SchoolPage() {
             <div key={s.label} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px' }}>
               <div style={{ width: 44, height: 44, borderRadius: 11, background: s.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color }}>{s.icon}</div>
               <div>
-                <div style={{ fontSize: 12, color: '#6b8a85' }}>{s.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#1a2e2b', letterSpacing: -0.5 }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{s.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: -0.5 }}>{s.value}</div>
               </div>
             </div>
           ))}
@@ -103,9 +103,9 @@ export default function SchoolPage() {
 
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {loading ? (
-                <div style={{ padding: '60px 0', textAlign: 'center', color: '#aab8b5' }}>불러오는 중...</div>
+                <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)' }}>불러오는 중...</div>
               ) : filtered.length === 0 ? (
-                <div style={{ padding: '60px 0', textAlign: 'center', color: '#aab8b5' }}>공지가 없습니다</div>
+                <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)' }}>공지가 없습니다</div>
               ) : filtered.map((n, i) => (
                 <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #f0f4f3' : 'none', cursor: 'pointer', transition: 'background 0.15s', background: n.is_read ? 'white' : '#fafff9' }}
                   onMouseEnter={e => (e.currentTarget.style.background = '#f8fbfa')}
@@ -114,12 +114,12 @@ export default function SchoolPage() {
                   {n.is_urgent && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />}
                   {!n.is_urgent && <span style={{ width: 6, flexShrink: 0 }} />}
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 14, fontWeight: n.is_read ? 500 : 700, color: '#1a2e2b' }}>{n.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: n.is_read ? 500 : 700, color: 'var(--text-primary)' }}>{n.title}</span>
                     {n.is_urgent && <span style={{ marginLeft: 8, fontSize: 10, background: '#fef2f2', color: '#ef4444', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>긴급</span>}
                   </div>
-                  <span style={{ fontSize: 12, color: '#aab8b5', marginRight: 4 }}>{n.author_name}</span>
-                  <span style={{ fontSize: 12, color: '#aab8b5', marginRight: 8 }}>{new Date(n.created_at).toLocaleDateString('ko-KR')}</span>
-                  <span style={{ fontSize: 12, color: '#aab8b5', marginRight: 8 }}>조회 {n.views}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 4 }}>{n.author_name}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 8 }}>{new Date(n.created_at).toLocaleDateString('ko-KR')}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 8 }}>조회 {n.views}</span>
                   <ChevronRight size={14} color="#aab8b5" />
                 </div>
               ))}
@@ -138,19 +138,19 @@ export default function SchoolPage() {
                     t.homeroom_class_num === sample?.class_num
                   )
                   return (
-                    <div key={className} style={{ padding: '12px', borderRadius: 9, background: '#f6faf9', border: '1.5px solid #e8f0ee' }}>
+                    <div key={className} style={{ padding: '12px', borderRadius: 9, background: 'var(--bg)', border: '1.5px solid #e8f0ee' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2b' }}>{className}</span>
-                        <span style={{ fontSize: 11, color: '#aab8b5' }}>{members.length}명</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{className}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{members.length}명</span>
                       </div>
-                      <div style={{ fontSize: 11, color: '#6b8a85' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                         {homeroom ? `담임: ${homeroom.name} 선생님` : `학생 ${members.length}명`}
                       </div>
                     </div>
                   )
                 })}
                 {Object.keys(classMap).length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#aab8b5', fontSize: 13 }}>학급 정보 없음</div>
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>학급 정보 없음</div>
                 )}
               </div>
             </div>
@@ -160,4 +160,3 @@ export default function SchoolPage() {
     </div>
   )
 }
-

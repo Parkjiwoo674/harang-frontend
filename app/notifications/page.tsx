@@ -89,9 +89,9 @@ export default function NotificationsPage() {
 
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {loading ? (
-                <div style={{ padding: '60px 0', textAlign: 'center', color: '#aab8b5' }}>불러오는 중...</div>
+                <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)' }}>불러오는 중...</div>
               ) : filtered.length === 0 ? (
-                <div style={{ padding: '60px 0', textAlign: 'center', color: '#aab8b5' }}>
+                <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <Bell size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                   <p>알림이 없습니다</p>
                 </div>
@@ -110,13 +110,13 @@ export default function NotificationsPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontSize: 14, fontWeight: n.is_read ? 500 : 700, color: '#1a2e2b' }}>{n.title}</span>
+                      <span style={{ fontSize: 14, fontWeight: n.is_read ? 500 : 700, color: 'var(--text-primary)' }}>{n.title}</span>
                       {n.tag && <span className={`tag ${tagColors[n.tag] || 'tag-gray'}`}>{n.tag}</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6b8a85' }}>{n.sender} · {timeAgo(n.created_at)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{n.sender} · {timeAgo(n.created_at)}</div>
                   </div>
                   {!n.is_read && (
-                    <button onClick={e => { e.stopPropagation(); markOne(n.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aab8b5', padding: 4 }}>
+                    <button onClick={e => { e.stopPropagation(); markOne(n.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
                       <Check size={15} />
                     </button>
                   )}
@@ -133,9 +133,9 @@ export default function NotificationsPage() {
                 { label: '과제', count: items.filter(n => n.type === 'assign').length, icon: <ClipboardList size={16} />, color: '#f97316' },
                 { label: '채팅', count: items.filter(n => n.type === 'chat').length, icon: <MessageCircle size={16} />, color: '#3b82f6' },
               ].map(s => (
-                <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f0f4f3' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: s.color }}>{s.icon}<span style={{ fontSize: 13, color: '#3d5a56' }}>{s.label}</span></div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#1a2e2b' }}>{s.count}건</span>
+                <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-card)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: s.color }}>{s.icon}<span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{s.label}</span></div>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{s.count}건</span>
                 </div>
               ))}
             </div>
