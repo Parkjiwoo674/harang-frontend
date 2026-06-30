@@ -24,8 +24,17 @@ async function fetchWeekMeal(date: string) {
   return res.json()
 }
 
+// 로컬(한국) 기준 yyyymmdd 문자열로 변환.
+// toISOString()은 UTC 기준이라 한국 시간(UTC+9) 자정에는 날짜가 하루 밀리는 버그가 있어 사용하지 않는다.
+function toYmd(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}${m}${d}`
+}
+
 function getTodayStr() {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  return toYmd(new Date())
 }
 
 function formatDateStr(dateStr: string) {
@@ -43,7 +52,7 @@ function addDays(dateStr: string, n: number) {
   const d = parseInt(dateStr.slice(6, 8))
   const date = new Date(y, m, d)
   date.setDate(date.getDate() + n)
-  return date.toISOString().slice(0, 10).replace(/-/g, '')
+  return toYmd(date)
 }
 
 function getWeekDays(dateStr: string) {
@@ -56,7 +65,7 @@ function getWeekDays(dateStr: string) {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(date)
     dd.setDate(date.getDate() + diffMon + i)
-    return dd.toISOString().slice(0, 10).replace(/-/g, '')
+    return toYmd(dd)
   })
 }
 
