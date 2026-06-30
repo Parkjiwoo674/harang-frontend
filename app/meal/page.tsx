@@ -282,26 +282,16 @@ export default function MealPage() {
               ))}
             </div>
 
-            {/* 알레르기 정보 */}
+            {/* 알레르기 유발식품 표시번호 */}
             {allergens.length > 0 && (
-              <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '14px 20px', border: '1px solid var(--border-card)', flexShrink: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>⚠️ 알레르기 정보</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  {allergens.map((item: any, i: number) => (
-                    <div key={i} style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px' }}>
-                      <strong>{item.name}</strong> · {parseAllergy(item.allergy)}
-                    </div>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 10, padding: '10px 16px', border: '1px solid var(--border-card)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>⚠️ 알레르기 유발식품 표시번호</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px', flex: 1 }}>
+                  {Object.entries(ALLERGY_NAMES).map(([code, name]) => (
+                    <span key={code} style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      <strong style={{ color: 'var(--text-secondary)' }}>{code}</strong>.{name}
+                    </span>
                   ))}
-                </div>
-                <div style={{ borderTop: '1px solid #f0f4f3', paddingTop: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>알레르기 유발식품 표시번호</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-                    {Object.entries(ALLERGY_NAMES).map(([code, name]) => (
-                      <span key={code} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                        <strong style={{ color: 'var(--text-primary)' }}>{code}</strong>.{name}
-                      </span>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
