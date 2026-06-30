@@ -98,6 +98,24 @@ export const authApi = {
     }),
 
   me: () => request<UserOut>("/api/auth/me"),
+
+  forgotPassword: (username: string, email: string) =>
+    request<{ message: string; token: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ username, email }),
+    }),
+
+  verifyResetCode: (token: string, code: string) =>
+    request<{ ok: boolean; reset_id: number }>('/api/auth/verify-reset-code', {
+      method: 'POST',
+      body: JSON.stringify({ token, code }),
+    }),
+
+  resetPassword: (reset_id: number, token: string, code: string, new_password: string) =>
+    request<{ message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ reset_id, token, code, new_password }),
+    }),
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────

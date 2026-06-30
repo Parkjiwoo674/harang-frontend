@@ -37,6 +37,8 @@ export default function DashboardPage() {
   const [todaySchedule, setTodaySchedule] = useState<ScheduleItem[]>([])
   const [notifications, setNotifications] = useState<NotificationOut[]>([])
   const [chatTab, setChatTab] = useState('공지')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const todayDay = ['일', '월', '화', '수', '목', '금', '토'][new Date().getDay()]
   const now = new Date()
@@ -78,6 +80,19 @@ export default function DashboardPage() {
   ]
   const currentPeriod = periodTimes.findIndex(([s, e]) => currentMinutes >= s && currentMinutes <= e) + 1
 
+  // 통합 검색: 공지 + 과제
+  const trimmedQuery = searchQuery.trim()
+  const searchResults = trimmedQuery
+    ? [
+        ...announcements
+          .filter(a => a.title.includes(trimmedQuery))
+          .map(a => ({ type: '공지' as const, id: a.id, title: a.title, href: '/announcements' })),
+        ...assignments
+          .filter(a => a.title.includes(trimmedQuery))
+          .map(a => ({ type: '과제' as const, id: a.id, title: a.title, href: '/assignments' })),
+      ].slice(0, 8)
+    : []
+
   // 채팅: 공지/자유/질문 탭에 맞는 room
   const tabKindMap: Record<string, string> = { '공지': 'class_notice', '자유': 'class_free', '질문': 'class_question' }
   const chatRoom = rooms.find(r => r.kind === tabKindMap[chatTab])
@@ -113,9 +128,32 @@ export default function DashboardPage() {
                 </div>
               </Link>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', borderRadius: 9, padding: '8px 14px', border: '1.5px solid var(--border)', width: 220 }}>
-              <Search size={14} color="#aab8b5" />
-              <input placeholder="검색..." style={{ border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)', background: 'transparent', width: '100%', fontFamily: 'inherit' }} />
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', borderRadius: 9, padding: '8px 14px', border: '1.5px solid var(--border)', width: 220 }}>
+                <Search size={14} color="#aab8b5" />
+                <input
+                  placeholder="검색..."
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true) }}
+                  onFocus={() => setSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                  style={{ border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)', background: 'transparent', width: '100%', fontFamily: 'inherit' }}
+                />
+              </div>
+              {searchOpen && trimmedQuery && (
+                <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 10, boxShadow: '0 12px 30px rgba(0,0,0,0.12)', overflow: 'hidden', zIndex: 50 }}>
+                  {searchResults.length === 0 ? (
+                    <div style={{ padding: '14px', fontSize: 13, color: 'var(--text-secondary)' }}>검색 결과가 없습니다.</div>
+                  ) : (
+                    searchResults.map(r => (
+                      <Link key={`${r.type}-${r.id}`} href={r.href} onClick={() => setSearchOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', textDecoration: 'none', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#1a7a6e', background: '#e8f5f3', borderRadius: 6, padding: '2px 6px', flexShrink: 0 }}>{r.type}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
             <Link href="/notifications">
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg-card)', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
