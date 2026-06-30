@@ -176,6 +176,8 @@ export const assignmentsApi = {
     description?: string
     due_date: string
     max_score?: number
+    target_grade: number
+    target_class: number
     file?: File | null
   }) => {
     const formData = new FormData()
@@ -183,6 +185,8 @@ export const assignmentsApi = {
     if (data.description) formData.append('description', data.description)
     formData.append('due_date', data.due_date)
     formData.append('max_score', String(data.max_score ?? 100))
+    formData.append('target_grade', String(data.target_grade))
+    formData.append('target_class', String(data.target_class))
     if (data.file) formData.append('file', data.file)
     return request<AssignmentOut>('/api/assignments/', { method: 'POST', body: formData })
   },
@@ -364,10 +368,13 @@ export interface AssignmentOut {
   teacher_name: string
   due_date: string
   max_score: number
+  target_grade: number
+  target_class: number
   created_at: string
   is_submitted: boolean
   submission_id?: number
 }
+
 
 export interface SubmissionOut {
   id: number

@@ -34,9 +34,9 @@ export default function AssignmentsPage() {
   const [submitContent, setSubmitContent] = useState('')
   const [submitFile, setSubmitFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  // 교사: 신규 과제 모달 (과목은 본인 담당 과목으로 고정 — 선택 불가)
+  // 교사: 신규 과제 모달 (과목은 본인 담당 과목으로 고정 — 선택 불가, 대상 학년/반은 필수 선택)
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ title: '', due_date: '', max_score: '100', description: '' })
+  const [form, setForm] = useState({ title: '', due_date: '', max_score: '100', description: '', target_grade: '1', target_class: '1' })
   const [newFile, setNewFile] = useState<File | null>(null)
   // 교사: 제출 목록 조회
   const [viewSubs, setViewSubs] = useState<{ assignmentId: number; subs: SubmissionOut[] } | null>(null)
@@ -68,7 +68,7 @@ export default function AssignmentsPage() {
     }
   }
 
-  // 교사 과제 등록 (과목은 본인 담당 과목으로 서버에서 자동 지정됨)
+  // 교사 과제 등록 (과목은 본인 담당 과목으로 서버에서 자동 지정됨, 대상 학년/반 필수)
   const handleCreate = async () => {
     if (!form.title || !form.due_date || !teacherSubject) return
     const a = await assignmentsApi.create({
@@ -76,11 +76,13 @@ export default function AssignmentsPage() {
       due_date: new Date(form.due_date).toISOString(),
       max_score: Number(form.max_score),
       description: form.description || undefined,
+      target_grade: Number(form.target_grade),
+      target_class: Number(form.target_class),
       file: newFile,
     })
     setItems(prev => [...prev, a])
     setShowNew(false)
-    setForm({ title: '', due_date: '', max_score: '100', description: '' })
+    setForm({ title: '', due_date: '', max_score: '100', description: '', target_grade: '1', target_class: '1' })
     setNewFile(null)
   }
 
@@ -186,6 +188,20 @@ export default function AssignmentsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>대상 학년</label>
+                      <select className="input" value={form.target_grade} onChange={e => setForm(f => ({ ...f, target_grade: e.target.value }))} style={{ cursor: 'pointer' }}>
+                        {[1, 2, 3].map(g => <option key={g} value={g}>{g}학년</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>대상 반</label>
+                      <select className="input" value={form.target_class} onChange={e => setForm(f => ({ ...f, target_class: e.target.value }))} style={{ cursor: 'pointer' }}>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(c => <option key={c} value={c}>{c}반</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
                       <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>과목</label>
                       <div style={{
                         padding: '9px 12px', borderRadius: 8, fontSize: 14, fontWeight: 700,
@@ -265,6 +281,7 @@ export default function AssignmentsPage() {
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                             {a.teacher_name} · 마감 {new Date(a.due_date).toLocaleDateString('ko-KR')} · 배점 {a.max_score}점
+                            {isTeacher && <> · {a.target_grade}학년 {a.target_class}반</>}
                             {a.file_name && (
                               <a href={fileHref(a.file_url)} target="_blank" rel="noopener noreferrer"
                                 onClick={e => e.stopPropagation()}
