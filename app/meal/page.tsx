@@ -73,6 +73,23 @@ const MEAL_ICONS: Record<string, string> = { '조식': '☀️', '중식': '🌤
 const MEAL_COLORS: Record<string, string> = { '조식': '#f59e0b', '중식': '#1a7a6e', '석식': '#8b5cf6' }
 const MEAL_BG: Record<string, string> = { '조식': '#fff8e1', '중식': '#e8f5f3', '석식': '#ede7f6' }
 
+// NEIS 급식 알레르기 유발식품 표시 번호
+const ALLERGY_NAMES: Record<string, string> = {
+  '1': '난류', '2': '우유', '3': '메밀', '4': '땅콩', '5': '대두',
+  '6': '밀', '7': '고등어', '8': '게', '9': '새우', '10': '돼지고기',
+  '11': '복숭아', '12': '토마토', '13': '아황산류', '14': '호두', '15': '닭고기',
+  '16': '쇠고기', '17': '오징어', '18': '조개류(굴,전복,홍합 포함)', '19': '잣',
+}
+
+// "1.5.6" 같은 알레르기 코드 문자열을 "난류, 대두, 밀"처럼 사람이 읽을 수 있는 이름으로 변환
+function parseAllergy(raw: string) {
+  return raw
+    .split(/[.,\s]+/)
+    .filter(Boolean)
+    .map(code => ALLERGY_NAMES[code] || code)
+    .join(', ')
+}
+
 function NutriRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = Math.min(Math.round((value / max) * 100), 100)
   return (
@@ -124,7 +141,7 @@ function MealCard({ meal, isCurrent }: { meal: any; isCurrent: boolean }) {
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
             {item.allergy && (
-              <span style={{ fontSize: 11, color: '#b91c1c', background: '#fef2f2', borderRadius: 5, padding: '2px 7px' }}>{item.allergy}</span>
+              <span style={{ fontSize: 11, color: '#b91c1c', background: '#fef2f2', borderRadius: 5, padding: '2px 7px' }}>{parseAllergy(item.allergy)}</span>
             )}
           </div>
         ))}
@@ -269,12 +286,22 @@ export default function MealPage() {
             {allergens.length > 0 && (
               <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '14px 20px', border: '1px solid var(--border-card)', flexShrink: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>⚠️ 알레르기 정보</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                   {allergens.map((item: any, i: number) => (
                     <div key={i} style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px' }}>
-                      <strong>{item.name}</strong> · {item.allergy}
+                      <strong>{item.name}</strong> · {parseAllergy(item.allergy)}
                     </div>
                   ))}
+                </div>
+                <div style={{ borderTop: '1px solid #f0f4f3', paddingTop: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>알레르기 유발식품 표시번호</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+                    {Object.entries(ALLERGY_NAMES).map(([code, name]) => (
+                      <span key={code} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>{code}</strong>.{name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
