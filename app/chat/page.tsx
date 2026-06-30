@@ -1,10 +1,10 @@
 'use client'
-const MEDIA_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChat } from '@/contexts/ChatContext'
 import { RoomOut, MessageOut, UserOut, usersApi } from '@/lib/api'
+import { getMediaUrl } from '@/lib/config'
 import { Send, Plus, Trash2, Lock, Users, Search, Check, Edit3, Hash } from 'lucide-react'
 
 /* ─────────────────────────────────────────
@@ -65,7 +65,7 @@ function PersonRow({ user, right, selected, onClick }: { user: ChatUser; right?:
       onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#f8fbfa' }}
       onMouseLeave={e => { if (!selected) e.currentTarget.style.background = selected ? '#f0f9f7' : 'white' }}
     >
-      {user.profile_image ? <img src={`${MEDIA_BASE}${user.profile_image}`} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>{user.avatar_text}</div>}
+      {user.profile_image ? <img src={getMediaUrl(user.profile_image) || ''} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: user.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white', flexShrink: 0 }}>{user.avatar_text}</div>}
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.role === 'student' ? `${user.grade}학년 ${user.class_num}반` : user.subject}</div>
@@ -93,7 +93,7 @@ function RoomItem({ room, active, myApiId, isTeacher, allUsers, onClick, onDelet
       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', margin: '1px 6px', borderRadius: 9, cursor: 'pointer', transition: 'all 0.15s', background: active ? '#e8f5f3' : hov ? '#f3f7f6' : 'transparent', borderLeft: `3px solid ${active ? '#1a7a6e' : 'transparent'}` }}
     >
       {isDm && otherUser
-        ? (otherUser.profile_image ? <img src={`${MEDIA_BASE}${otherUser.profile_image}`} alt="프로필" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 30, height: 30, borderRadius: '50%', background: otherUser.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: otherUser.avatar_text.length > 1 ? 10 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{otherUser.avatar_text}</div>)
+        ? (otherUser.profile_image ? <img src={getMediaUrl(otherUser.profile_image) || ''} alt="프로필" style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 30, height: 30, borderRadius: '50%', background: otherUser.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: otherUser.avatar_text.length > 1 ? 10 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{otherUser.avatar_text}</div>)
         : <span style={{ fontSize: 18, flexShrink: 0 }}>{room.emoji}</span>
       }
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -503,7 +503,7 @@ export default function ChatPage() {
                     const otherId = activeRoom.member_ids.find((id: number) => id !== myApiId)
                     const other = allUsers.find(u => u.id === otherId)
                     return other ? (
-                      other.profile_image ? <img src={`${MEDIA_BASE}${other.profile_image}`} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: other.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: other.avatar_text.length > 1 ? 11 : 15, fontWeight: 700, color: 'white', flexShrink: 0 }}>{other.avatar_text}</div>
+                      other.profile_image ? <img src={getMediaUrl(other.profile_image) || ''} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: other.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: other.avatar_text.length > 1 ? 11 : 15, fontWeight: 700, color: 'white', flexShrink: 0 }}>{other.avatar_text}</div>
                     ) : null
                   })()
                 ) : (
@@ -552,7 +552,7 @@ export default function ChatPage() {
                       return (
                         <div key={m.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 8, marginTop: prevSame ? 3 : 14 }}>
                           {!prevSame && !isMe
-                            ? (m.profile_image ? <img src={`${MEDIA_BASE}${m.profile_image}`} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
+                            ? (m.profile_image ? <img src={getMediaUrl(m.profile_image) || ''} alt="프로필" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 34, height: 34, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 13, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
                             : !isMe ? <div style={{ width: 34, flexShrink: 0 }} /> : null
                           }
                           <div style={{ maxWidth: 480 }}>
@@ -577,7 +577,7 @@ export default function ChatPage() {
                     return (
                       <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: prevSame ? 2 : 14 }}>
                         {!prevSame
-                          ? (m.profile_image ? <img src={`${MEDIA_BASE}${m.profile_image}`} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 14, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
+                          ? (m.profile_image ? <img src={getMediaUrl(m.profile_image) || ''} alt="프로필" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 38, height: 38, borderRadius: '50%', background: m.avatar_color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: m.avatar_text.length > 1 ? 11 : 14, fontWeight: 700, color: 'white', flexShrink: 0 }}>{m.avatar_text}</div>)
                           : <div style={{ width: 38, flexShrink: 0 }} />
                         }
                         <div style={{ flex: 1 }}>

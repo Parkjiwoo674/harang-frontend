@@ -13,3 +13,9 @@ export const APP_TAGLINE =
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+  export function getMediaUrl(path?: string | null): string | null {
+  if (!path) return null
+  if (/^https?:\/\//i.test(path)) return path
+  return `${API_BASE}${path}`
+}

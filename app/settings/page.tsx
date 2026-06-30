@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { usersApi, authApi } from '@/lib/api'
+import { getMediaUrl } from '@/lib/config'
 import { User, Bell, Palette, Shield, Camera, Check, LogOut, Eye, EyeOff } from 'lucide-react'
 
+
 const SETTINGS_KEY = 'harang_settings'
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const AVATAR_COLORS = ['#1a7a6e','#3b82f6','#8b5cf6','#ef4444','#f97316','#eab308','#22c55e','#ec4899','#14b8a6','#6366f1']
 
@@ -168,7 +169,7 @@ export default function SettingsPage() {
     { id: 'appearance', label: '화면 설정', icon: Palette },
   ]
 
-  const avatarSrc = profileImage ? `${BASE}${profileImage}` : null
+  const avatarSrc = getMediaUrl(profileImage)
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>

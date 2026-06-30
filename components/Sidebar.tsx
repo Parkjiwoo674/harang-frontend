@@ -4,10 +4,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Bell, BookOpen, ClipboardList, Calendar, BarChart2, MessageCircle, HelpCircle, School, Settings, Home, LogOut, Megaphone, Shield, UtensilsCrossed } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChat } from '@/contexts/ChatContext'
-import { APP_NAME, SCHOOL_NAME } from '@/lib/config'
 import Image from 'next/image'
-
-const MEDIA_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { APP_NAME, SCHOOL_NAME, getMediaUrl } from '@/lib/config'
 
 const STUDENT_NAV = [
   { href: '/dashboard',     icon: Home,          label: '대시보드',    section: null },
@@ -68,7 +66,7 @@ export default function Sidebar() {
       <Link href="/settings" className="user-card" style={{ textDecoration: 'none' }}>
         {user?.profileImage
           ? <img
-              src={`${MEDIA_BASE}${user.profileImage}`}
+              src={getMediaUrl(user.profileImage) || ''}
               alt="프로필"
               style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid rgba(255,255,255,0.3)' }}
             />
