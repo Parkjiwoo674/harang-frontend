@@ -178,8 +178,9 @@ export default function MealPage() {
   const hour = new Date().getHours()
   const currentMealType = hour < 9 ? '조식' : hour < 14 ? '중식' : '석식'
 
-  const origins = meals.flatMap(m => m.origins || [])
-    .filter((o, i, arr) => arr.findIndex(x => x.name === o.name) === i)
+  const allergens = meals.flatMap(m => m.items || [])
+    .filter((item: any) => item.allergy)
+    .filter((item: any, i: number, arr: any[]) => arr.findIndex(x => x.name === item.name) === i)
 
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
@@ -264,14 +265,14 @@ export default function MealPage() {
               ))}
             </div>
 
-            {/* 원산지 */}
-            {origins.length > 0 && (
+            {/* 알레르기 정보 */}
+            {allergens.length > 0 && (
               <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '14px 20px', border: '1px solid var(--border-card)', flexShrink: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>📍 원산지 정보</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>⚠️ 알레르기 정보</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {origins.map((o: any, i: number) => (
-                    <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg)', border: '1px solid #e2e8e6', borderRadius: 6, padding: '4px 10px' }}>
-                      <strong style={{ color: 'var(--text-primary)' }}>{o.name}</strong> {o.origin}
+                  {allergens.map((item: any, i: number) => (
+                    <div key={i} style={{ fontSize: 12, color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px' }}>
+                      <strong>{item.name}</strong> · {item.allergy}
                     </div>
                   ))}
                 </div>
